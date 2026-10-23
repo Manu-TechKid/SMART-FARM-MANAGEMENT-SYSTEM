@@ -97,8 +97,61 @@ export default function LoginPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.25fr 1fr' }, bgcolor: 'background.default' }}>
-      {/* Left Visual Showcase Panel */}
+    <Box sx={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1.25fr' }, bgcolor: 'background.default' }}>
+      {/* Left Authentication Form Panel */}
+      <Box sx={{ display: 'grid', placeItems: 'center', p: { xs: 2.5, md: 5 }, bgcolor: '#f6f8f5' }}>
+        <Card sx={{ width: '100%', maxWidth: 440, boxShadow: '0 12px 32px rgba(0,0,0,0.08)', borderRadius: 3 }}>
+          <CardContent component="form" onSubmit={submit} noValidate sx={{ display: 'grid', gap: 2.2, p: { xs: 3, sm: 4 } }}>
+            <Box>
+              <Typography variant="h5" fontWeight={800} color="primary.main">
+                Sign in to Smart Farm
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Manage your livestock, apiaries, production, inventory & finance
+              </Typography>
+            </Box>
+            {error && <Alert severity="error">{error}</Alert>}
+            <TextField
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={email.length > 0 && !emailValid}
+              helperText={email.length > 0 && !emailValid ? 'Invalid email' : ' '}
+              autoComplete="email"
+              required
+            />
+            <TextField
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+            />
+            <Button type="submit" variant="contained" size="large" disabled={busy} sx={{ py: 1.3, fontWeight: 700 }}>
+              {busy ? 'Signing in…' : 'Sign in'}
+            </Button>
+            <Divider>OR</Divider>
+            <Button
+              type="button"
+              variant="outlined"
+              color="secondary"
+              size="large"
+              disabled={busy}
+              onClick={launchDemo}
+              sx={{ py: 1.2, fontWeight: 700 }}
+            >
+              🚀 Open Interactive [DEMO] Farm Dashboard
+            </Button>
+            <Typography variant="body2" textAlign="center" sx={{ mt: 1 }}>
+              No account? <Link component={RouterLink} to="/register" fontWeight={600}>Register a new farm account</Link>
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
+
+      {/* Right Visual Showcase Background Panel */}
       <Box
         sx={{
           position: 'relative',
@@ -160,59 +213,6 @@ export default function LoginPage() {
           <span>🐔 Poultry Flocks</span>
           <span>🐝 Beehives & Honey</span>
         </Stack>
-      </Box>
-
-      {/* Right Authentication Form Panel */}
-      <Box sx={{ display: 'grid', placeItems: 'center', p: { xs: 2.5, md: 5 }, bgcolor: '#f6f8f5' }}>
-        <Card sx={{ width: '100%', maxWidth: 440, boxShadow: '0 12px 32px rgba(0,0,0,0.08)', borderRadius: 3 }}>
-          <CardContent component="form" onSubmit={submit} noValidate sx={{ display: 'grid', gap: 2.2, p: { xs: 3, sm: 4 } }}>
-            <Box>
-              <Typography variant="h5" fontWeight={800} color="primary.main">
-                Sign in to Smart Farm
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Manage your livestock, apiaries, production, inventory & finance
-              </Typography>
-            </Box>
-            {error && <Alert severity="error">{error}</Alert>}
-            <TextField
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              error={email.length > 0 && !emailValid}
-              helperText={email.length > 0 && !emailValid ? 'Invalid email' : ' '}
-              autoComplete="email"
-              required
-            />
-            <TextField
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-            <Button type="submit" variant="contained" size="large" disabled={busy} sx={{ py: 1.3, fontWeight: 700 }}>
-              {busy ? 'Signing in…' : 'Sign in'}
-            </Button>
-            <Divider>OR</Divider>
-            <Button
-              type="button"
-              variant="outlined"
-              color="secondary"
-              size="large"
-              disabled={busy}
-              onClick={launchDemo}
-              sx={{ py: 1.2, fontWeight: 700 }}
-            >
-              🚀 Open Interactive [DEMO] Farm Dashboard
-            </Button>
-            <Typography variant="body2" textAlign="center" sx={{ mt: 1 }}>
-              No account? <Link component={RouterLink} to="/register" fontWeight={600}>Register a new farm account</Link>
-            </Typography>
-          </CardContent>
-        </Card>
       </Box>
     </Box>
   );

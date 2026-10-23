@@ -27,36 +27,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.25fr 1fr' }, bgcolor: 'background.default' }}>
-      <Box
-        sx={{
-          minHeight: { xs: 260, md: '100vh' },
-          backgroundImage: 'linear-gradient(180deg, rgba(12, 38, 22, 0.35) 0%, rgba(10, 32, 18, 0.88) 100%), url(/images/farm-harvest-hero.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          p: { xs: 3, md: 6 },
-          color: '#fff',
-        }}
-      >
-        <Stack direction="row" spacing={1}>
-          <Chip label="🌾 SMART FARM OS" sx={{ bgcolor: 'rgba(46, 125, 50, 0.9)', color: '#fff', fontWeight: 700 }} />
-        </Stack>
-        <Box sx={{ maxWidth: 600 }}>
-          <Typography variant="h3" fontWeight={800} sx={{ fontSize: { xs: '1.75rem', md: '2.4rem' }, mb: 1.5 }}>
-            Launch Your Digital Farm Workspace
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-            Manage goats, sheep, dairy cows, poultry flocks, and beehives with end-to-end production batch traceability and real-time financial reporting.
-          </Typography>
-        </Box>
-        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.75)' }}>
-          Role-Based Access Control • Multi-Farm Isolation • Exportable PDF & Excel Reports
-        </Typography>
-      </Box>
-
+    <Box sx={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1.25fr' }, bgcolor: 'background.default' }}>
+      {/* Left Registration Form Panel */}
       <Box sx={{ display: 'grid', placeItems: 'center', p: { xs: 2.5, md: 5 }, bgcolor: '#f6f8f5' }}>
         <Card sx={{ width: '100%', maxWidth: 460, boxShadow: '0 12px 32px rgba(0,0,0,0.08)', borderRadius: 3 }}>
           <CardContent component="form" onSubmit={submit} noValidate sx={{ display: 'grid', gap: 2, p: { xs: 3, sm: 4 } }}>
@@ -84,6 +56,36 @@ export default function RegisterPage() {
             </Typography>
           </CardContent>
         </Card>
+      </Box>
+
+      {/* Right Visual Showcase Background Panel */}
+      <Box
+        sx={{
+          minHeight: { xs: 260, md: '100vh' },
+          backgroundImage: 'linear-gradient(180deg, rgba(12, 38, 22, 0.35) 0%, rgba(10, 32, 18, 0.88) 100%), url(/images/farm-harvest-hero.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          p: { xs: 3, md: 6 },
+          color: '#fff',
+        }}
+      >
+        <Stack direction="row" spacing={1}>
+          <Chip label="🌾 SMART FARM OS" sx={{ bgcolor: 'rgba(46, 125, 50, 0.9)', color: '#fff', fontWeight: 700 }} />
+        </Stack>
+        <Box sx={{ maxWidth: 600 }}>
+          <Typography variant="h3" fontWeight={800} sx={{ fontSize: { xs: '1.75rem', md: '2.4rem' }, mb: 1.5 }}>
+            Launch Your Digital Farm Workspace
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+            Manage goats, sheep, dairy cows, poultry flocks, and beehives with end-to-end production batch traceability and real-time financial reporting.
+          </Typography>
+        </Box>
+        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.75)' }}>
+          Role-Based Access Control • Multi-Farm Isolation • Exportable PDF & Excel Reports
+        </Typography>
       </Box>
     </Box>
   );
