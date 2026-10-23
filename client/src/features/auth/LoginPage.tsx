@@ -141,8 +141,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleForgotSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleForgotSubmit = async () => {
     if (!forgotEmail.trim()) return;
     await api.post('/auth/forgot-password', { email: forgotEmail.trim() }).catch(() => undefined);
     setForgotSent(true);
@@ -520,7 +519,7 @@ export default function LoginPage() {
       {/* Forgot Password Dialog */}
       <Dialog open={forgotOpen} onClose={() => setForgotOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle fontWeight={800}>Reset Farm Account Password</DialogTitle>
-        <DialogContent component="form" onSubmit={handleForgotSubmit}>
+        <DialogContent>
           {forgotSent ? (
             <Alert severity="success" sx={{ mt: 1 }}>
               If an account exists for <strong>{forgotEmail}</strong>, a password reset token has been generated.
