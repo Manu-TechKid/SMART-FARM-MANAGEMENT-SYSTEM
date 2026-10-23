@@ -70,7 +70,11 @@ builder.Services.AddCors(options =>
               .AllowCredentials()));
 
 // ── Controllers & API ─────────────────────────────────────────────────────────
-builder.Services.AddControllers()
+builder.Services.AddScoped<FarmAuthorizationFilter>();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.AddService<FarmAuthorizationFilter>();
+})
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
