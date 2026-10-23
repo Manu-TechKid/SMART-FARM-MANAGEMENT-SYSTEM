@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Alert, Box, Button, Checkbox, Chip, Dialog, DialogActions, DialogContent,
-  DialogTitle, Divider, FormControlLabel, IconButton, InputAdornment, Link, Stack,
+  DialogTitle, Divider, FormControlLabel, InputAdornment, Link, Stack,
   TextField, Typography,
 } from '@mui/material';
 import {
