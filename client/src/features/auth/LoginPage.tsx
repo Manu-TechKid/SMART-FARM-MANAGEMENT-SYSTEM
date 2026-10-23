@@ -571,26 +571,28 @@ export default function LoginPage() {
       {/* Forgot Password / Support Modal */}
       <Dialog open={forgotOpen} onClose={() => setForgotOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={{ fontWeight: 700 }}>Password Reset & Support</DialogTitle>
-        <DialogContent component="form" onSubmit={handleForgotSubmit} sx={{ display: 'grid', gap: 2, pt: '12px !important' }}>
-          <Typography variant="body2" color="text.secondary">
-            Enter your account email to request a password reset token, or contact your Farm Manager in Users &amp; Permissions.
-          </Typography>
-          {forgotMsg && <Alert severity="success">{forgotMsg}</Alert>}
-          <TextField
-            label="Account Email"
-            type="email"
-            size="small"
-            fullWidth
-            value={forgotEmail}
-            onChange={(e) => setForgotEmail(e.target.value)}
-            required
-          />
-          <DialogActions sx={{ px: 0 }}>
-            <Button onClick={() => setForgotOpen(false)}>Close</Button>
-            <Button type="submit" variant="contained" sx={{ bgcolor: '#0b4f5c' }}>
-              Send Reset Request
-            </Button>
-          </DialogActions>
+        <DialogContent sx={{ pt: '12px !important' }}>
+          <Box component="form" onSubmit={handleForgotSubmit} sx={{ display: 'grid', gap: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              Enter your account email to request a password reset token, or contact your Farm Manager in Users &amp; Permissions.
+            </Typography>
+            {forgotMsg && <Alert severity="success">{forgotMsg}</Alert>}
+            <TextField
+              label="Account Email"
+              type="email"
+              size="small"
+              fullWidth
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
+              required
+            />
+            <DialogActions sx={{ px: 0 }}>
+              <Button onClick={() => setForgotOpen(false)}>Close</Button>
+              <Button type="submit" variant="contained" sx={{ bgcolor: '#0b4f5c' }}>
+                Send Reset Request
+              </Button>
+            </DialogActions>
+          </Box>
         </DialogContent>
       </Dialog>
     </Box>
