@@ -84,10 +84,29 @@ export default function BeehivesPage() {
 
   return (
     <Stack spacing={2}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
-        <Typography variant="h5" fontWeight={700}>Beehives</Typography>
-        <Button variant="contained" onClick={() => { setHiveError(''); setAddOpen(true); }}>Register hive</Button>
-      </Stack>
+      <Box
+        sx={{
+          borderRadius: 3,
+          overflow: 'hidden',
+          backgroundImage: 'linear-gradient(90deg, rgba(35, 22, 4, 0.88) 0%, rgba(58, 36, 6, 0.68) 60%, rgba(35, 22, 4, 0.45) 100%), url(/images/beehives.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          color: '#fff',
+          p: { xs: 2.5, md: 3.5 },
+        }}
+      >
+        <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+          <Box>
+            <Typography variant="h5" fontWeight={800}>🐝 Apiary & Beehive Management</Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.88)', mt: 0.5 }}>
+              Track colony strength, queen status, brood frame inspections, pest treatments, and honey harvests.
+            </Typography>
+          </Box>
+          <Button variant="contained" color="warning" onClick={() => { setHiveError(''); setAddOpen(true); }} sx={{ fontWeight: 700 }}>
+            + Register Hive
+          </Button>
+        </Stack>
+      </Box>
 
       <TextField size="small" select label="Colony status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(0); }} sx={{ width: 180 }}>
         <MenuItem value="">All</MenuItem>{COLONY.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}

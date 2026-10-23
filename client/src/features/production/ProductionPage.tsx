@@ -161,10 +161,29 @@ export default function ProductionPage() {
 
   return (
     <Stack spacing={3}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
-        <Typography variant="h5" fontWeight={700}>Production Management</Typography>
-        <Button variant="contained" onClick={() => { setErr(''); setOpen(true); }}>Record production</Button>
-      </Stack>
+      <Box
+        sx={{
+          borderRadius: 3,
+          overflow: 'hidden',
+          backgroundImage: 'linear-gradient(90deg, rgba(16, 42, 22, 0.88) 0%, rgba(24, 62, 34, 0.72) 60%, rgba(16, 42, 22, 0.45) 100%), url(/images/farm-harvest-hero.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          color: '#fff',
+          p: { xs: 2.5, md: 3.5 },
+        }}
+      >
+        <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+          <Box>
+            <Typography variant="h5" fontWeight={800}>🥛🥚🍯 Farm Production & Batch Traceability</Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.88)', mt: 0.5 }}>
+              Record daily milk, eggs, honey, beeswax, and wool harvests with automatic batch inventory tracking.
+            </Typography>
+          </Box>
+          <Button variant="contained" color="warning" onClick={() => { setErr(''); setOpen(true); }} sx={{ fontWeight: 700 }}>
+            + Record Production
+          </Button>
+        </Stack>
+      </Box>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
         <TextField select size="small" label="Product" value={productFilter} onChange={(e) => setProductFilter(e.target.value)} sx={{ minWidth: 160 }}>

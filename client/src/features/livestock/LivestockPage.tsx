@@ -125,6 +125,48 @@ export default function LivestockPage() {
         </Stack>
       </Stack>
 
+      {/* Interactive Species Photo Filter Strip */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+        {[
+          { key: 'Goat', label: 'Goats', subtitle: 'Boer & Dairy Herd', img: '/images/goats.jpg' },
+          { key: 'Sheep', label: 'Sheep', subtitle: 'Flock & Wool', img: '/images/sheep.jpg' },
+          { key: 'Cow', label: 'Cows', subtitle: 'Dairy & Beef Cattle', img: '/images/cows.jpg' },
+          { key: 'Chicken', label: 'Chickens', subtitle: 'Layers & Broilers', img: '/images/farm-harvest-hero.jpg' },
+        ].map((item) => {
+          const active = species === item.key;
+          return (
+            <Paper
+              key={item.key}
+              onClick={() => { setSpecies(active ? '' : item.key); setPage(0); }}
+              sx={{
+                position: 'relative',
+                height: 105,
+                borderRadius: 2.5,
+                overflow: 'hidden',
+                cursor: 'pointer',
+                backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.78) 100%), url(${item.img})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                color: '#fff',
+                p: 1.5,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-end',
+                border: active ? '3px solid #2e7d32' : '1px solid rgba(0,0,0,0.12)',
+                boxShadow: active ? 4 : 1,
+                transition: 'transform 0.2s',
+                '&:hover': { transform: 'translateY(-2px)' },
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={800} sx={{ lineHeight: 1.1 }}>{item.label}</Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                {active ? '✓ Filtered (click to show all)' : item.subtitle}
+              </Typography>
+            </Paper>
+          );
+        })}
+      </Box>
+
       <Tabs value={tab} onChange={(_, v) => setTab(v)}>
         <Tab label={`Individual Animals (${data?.totalCount ?? 0})`} />
         <Tab label={`Flocks, Herds & Batches (${groups?.length ?? 0})`} />
