@@ -117,18 +117,29 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Smart Farm API v1"));
+    app.UseSwaggerUI(c =>
+    {
+        c.RoutePrefix = "api-docs";
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Smart Farm API v1");
+    });
+
+    // Redirect legacy /swagger or /swagger/index.html URLs directly to the React Dashboard UI
+    app.MapGet("/swagger", () => Results.Redirect("/"));
+    app.MapGet("/swagger/index.html", () => Results.Redirect("/"));
 }
 else
 {
     app.UseHttpsRedirection();
 }
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
+app.MapFallbackToFile("index.html");
 
 // ── Database initialisation ───────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())

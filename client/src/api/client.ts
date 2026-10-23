@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_URL ?? 'http://localhost:5080/api';
+const baseURL =
+  import.meta.env.VITE_API_URL ??
+  (typeof window !== 'undefined' && window.location.port === '5173'
+    ? 'http://localhost:5080/api'
+    : '/api');
 
 export const api = axios.create({ baseURL });
 
@@ -23,9 +27,10 @@ api.interceptors.response.use(
 );
 
 export function errorMessage(err: unknown): string {
-  const e = err as { response?: { data?: { error?: string; title?: string; errors?: Record<string, string[]> } }; message?: string };
+  const e = err as { response?: { data?: { error?: string; message?: string; title?: string; errors?: Record<string, string[]> } }; message?: string };
   const data = e.response?.data;
   if (data?.error) return data.error;
+  if (data?.message) return data.message;
   if (data?.errors) return Object.values(data.errors).flat().join(' ');
   if (data?.title) return data.title;
   return e.message ?? 'Unexpected error';
