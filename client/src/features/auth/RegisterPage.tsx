@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
-  Alert, Box, Button, Divider, InputAdornment, Link, OutlinedInput, Stack, Typography,
+  Alert, Box, Button, Chip, IconButton, InputAdornment, Link, Stack, TextField, Typography,
 } from '@mui/material';
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
+import {
+  Visibility, VisibilityOff, EmailOutlined, LockOutlined, PersonOutline, ArrowForward,
+} from '@mui/icons-material';
 import { useAuth } from './AuthContext';
 import { errorMessage } from '../../api/client';
 
@@ -12,12 +13,11 @@ export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm({ ...form, [k]: e.target.value });
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value });
   const passwordOk = form.password.length >= 8 && /\d/.test(form.password);
 
   const submit = async (e: FormEvent) => {
@@ -38,197 +38,225 @@ export default function RegisterPage() {
     }
   };
 
-  const inputSx = {
-    borderRadius: 2,
-    bgcolor: '#f8fafc',
-    fontSize: '0.95rem',
-    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#e2e8f0' },
-    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
-    '&.Mui-focused': { bgcolor: '#ffffff' },
-  };
-
   return (
     <Box
       sx={{
         minHeight: '100vh',
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+        gridTemplateColumns: { xs: '1fr', md: 'minmax(460px, 46%) 1fr' },
         bgcolor: '#ffffff',
       }}
     >
-      {/* Left Side: Clean Full-Bleed White Registration Panel */}
+      {/* LEFT PANEL: Full-Bleed Registration Workspace */}
       <Box
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          px: { xs: 3, sm: 6, md: 8 },
-          py: { xs: 5, md: 6 },
+          justifyContent: 'space-between',
+          px: { xs: 3, sm: 6, lg: 8 },
+          py: { xs: 3.5, md: 4.5 },
           bgcolor: '#ffffff',
+          borderRight: { md: '1px solid #edf2ee' },
         }}
       >
-        <Box component="form" onSubmit={submit} noValidate sx={{ width: '100%', maxWidth: 400 }}>
-          {/* Brand Lockup */}
-          <Stack
-            direction="row"
-            spacing={1.75}
-            alignItems="center"
-            justifyContent="center"
-            sx={{ mb: 3.5 }}
-          >
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Stack direction="row" spacing={1.5} alignItems="center">
             <Box
               sx={{
-                width: 46,
-                height: 46,
+                width: 44,
+                height: 44,
                 borderRadius: 2.5,
-                bgcolor: '#d4af37',
-                color: '#1b2a1e',
+                background: 'linear-gradient(135deg, #1b5e20 0%, #43a047 100%)',
                 display: 'grid',
                 placeItems: 'center',
+                color: '#fff',
                 fontWeight: 900,
-                fontSize: '1.05rem',
-                boxShadow: '0 4px 12px rgba(212, 175, 55, 0.35)',
+                fontSize: '1.1rem',
+                boxShadow: '0 6px 16px rgba(46, 125, 50, 0.28)',
               }}
             >
               SF
             </Box>
-            <Divider orientation="vertical" flexItem sx={{ borderColor: '#d0d7de', height: 36, alignSelf: 'center' }} />
-            <Box>
-              <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', lineHeight: 1.15, color: '#0f2930' }}>
+            <Box sx={{ pl: 1.5, borderLeft: '2px solid #e0e8e1' }}>
+              <Typography variant="subtitle1" fontWeight={800} sx={{ lineHeight: 1.1, color: '#132a19' }}>
                 SmartFarm
               </Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>
-                SmartFarm Management
+              <Typography variant="caption" sx={{ color: '#5c7261', fontWeight: 600 }}>
+                Agricultural ERP & Telemetry
               </Typography>
             </Box>
           </Stack>
+          <Chip size="small" label="New Farm Setup" sx={{ bgcolor: '#e8f5e9', color: '#1b5e20', fontWeight: 700 }} />
+        </Stack>
 
-          <Box sx={{ textAlign: 'center', mb: 3.5 }}>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: '#0f2930', fontSize: { xs: '1.7rem', sm: '1.9rem' }, mb: 0.5 }}>
-              Create Farm Account
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.92rem' }}>
-              Register as a farm manager to set up your sections and staff
-            </Typography>
-          </Box>
+        <Box sx={{ width: '100%', maxWidth: 420, mx: 'auto', my: { xs: 4, md: 2 } }}>
+          <Typography variant="h4" fontWeight={800} sx={{ color: '#112617', letterSpacing: -0.5, mb: 0.5 }}>
+            Create Farm Account
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#5f7464', mb: 3 }}>
+            Register as a Farm Manager to set up your livestock, apiary, and production modules.
+          </Typography>
 
           {error && <Alert severity="error" sx={{ mb: 2.5, borderRadius: 2 }}>{error}</Alert>}
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <Typography sx={{ fontSize: '0.84rem', fontWeight: 700, color: '#1e293b', mb: 0.7 }}>
-                First name <Box component="span" sx={{ color: '#dc2626' }}>*</Box>
+          <Box component="form" onSubmit={submit} noValidate sx={{ display: 'grid', gap: 2 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="caption" fontWeight={700} sx={{ color: '#2b4230', display: 'block', mb: 0.6 }}>
+                  First Name *
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="Jane"
+                  value={form.firstName}
+                  onChange={set('firstName')}
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonOutline sx={{ color: '#6b8270', fontSize: 19 }} />
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: 2.5, bgcolor: '#f9fbf9' },
+                  }}
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="caption" fontWeight={700} sx={{ color: '#2b4230', display: 'block', mb: 0.6 }}>
+                  Last Name *
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="Kamau"
+                  value={form.lastName}
+                  onChange={set('lastName')}
+                  required
+                  InputProps={{ sx: { borderRadius: 2.5, bgcolor: '#f9fbf9' } }}
+                />
+              </Box>
+            </Stack>
+
+            <Box>
+              <Typography variant="caption" fontWeight={700} sx={{ color: '#2b4230', display: 'block', mb: 0.6 }}>
+                Email Address *
               </Typography>
-              <OutlinedInput fullWidth placeholder="First name" value={form.firstName} onChange={set('firstName')} sx={inputSx} />
+              <TextField
+                fullWidth
+                placeholder="manager@smartfarm.com"
+                type="email"
+                value={form.email}
+                onChange={set('email')}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailOutlined sx={{ color: '#6b8270', fontSize: 19 }} />
+                    </InputAdornment>
+                  ),
+                  sx: { borderRadius: 2.5, bgcolor: '#f9fbf9' },
+                }}
+              />
             </Box>
-            <Box sx={{ flex: 1 }}>
-              <Typography sx={{ fontSize: '0.84rem', fontWeight: 700, color: '#1e293b', mb: 0.7 }}>
-                Last name <Box component="span" sx={{ color: '#dc2626' }}>*</Box>
+
+            <Box>
+              <Typography variant="caption" fontWeight={700} sx={{ color: '#2b4230', display: 'block', mb: 0.6 }}>
+                Password *
               </Typography>
-              <OutlinedInput fullWidth placeholder="Last name" value={form.lastName} onChange={set('lastName')} sx={inputSx} />
+              <TextField
+                fullWidth
+                placeholder="At least 8 characters with 1 digit"
+                type={showPass ? 'text' : 'password'}
+                value={form.password}
+                onChange={set('password')}
+                error={form.password.length > 0 && !passwordOk}
+                helperText="Minimum 8 characters including at least one number"
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockOutlined sx={{ color: '#6b8270', fontSize: 19 }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setShowPass((v) => !v)} edge="end">
+                        {showPass ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                  sx: { borderRadius: 2.5, bgcolor: '#f9fbf9' },
+                }}
+              />
             </Box>
-          </Stack>
 
-          <Box sx={{ mb: 2 }}>
-            <Typography sx={{ fontSize: '0.84rem', fontWeight: 700, color: '#1e293b', mb: 0.7 }}>
-              Email address <Box component="span" sx={{ color: '#dc2626' }}>*</Box>
-            </Typography>
-            <OutlinedInput type="email" fullWidth placeholder="Enter your email address" value={form.email} onChange={set('email')} sx={inputSx} />
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              disabled={busy}
+              endIcon={<ArrowForward />}
+              sx={{
+                mt: 1,
+                py: 1.45,
+                borderRadius: 99,
+                fontWeight: 800,
+                textTransform: 'none',
+                fontSize: '0.98rem',
+                background: 'linear-gradient(90deg, #1b5e20 0%, #2e7d32 100%)',
+                boxShadow: '0 8px 20px rgba(27, 94, 32, 0.25)',
+              }}
+            >
+              {busy ? 'Creating Workspace…' : 'Create Farm Account'}
+            </Button>
           </Box>
+        </Box>
 
-          <Box sx={{ mb: 3 }}>
-            <Typography sx={{ fontSize: '0.84rem', fontWeight: 700, color: '#1e293b', mb: 0.7 }}>
-              Password <Box component="span" sx={{ color: '#dc2626' }}>*</Box>
-            </Typography>
-            <OutlinedInput
-              type={showPassword ? 'text' : 'password'}
-              fullWidth
-              placeholder="Min 8 characters, at least 1 digit"
-              value={form.password}
-              onChange={set('password')}
-              endAdornment={
-                <InputAdornment position="end">
-                  <Button
-                    type="button"
-                    size="small"
-                    onClick={() => setShowPassword((s) => !s)}
-                    endIcon={
-                      showPassword ? (
-                        <VisibilityOffOutlinedIcon sx={{ fontSize: '1rem !important' }} />
-                      ) : (
-                        <VisibilityOutlinedIcon sx={{ fontSize: '1rem !important' }} />
-                      )
-                    }
-                    sx={{ textTransform: 'none', color: '#64748b', fontWeight: 600, fontSize: '0.78rem', minWidth: 'auto', px: 1 }}
-                  >
-                    {showPassword ? 'Hide' : 'Show password'}
-                  </Button>
-                </InputAdornment>
-              }
-              sx={inputSx}
-            />
-          </Box>
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            disabled={busy}
-            sx={{
-              py: 1.55,
-              borderRadius: 999,
-              bgcolor: '#0b4f5c',
-              color: '#ffffff',
-              textTransform: 'none',
-              fontSize: '0.98rem',
-              fontWeight: 700,
-              boxShadow: '0 6px 16px rgba(11, 79, 92, 0.25)',
-              '&:hover': { bgcolor: '#083b45' },
-            }}
-          >
-            {busy ? 'Creating Account…' : 'Create Account'}
-          </Button>
-
-          <Typography variant="body2" sx={{ textAlign: 'center', mt: 3, color: '#64748b', fontSize: '0.84rem' }}>
-            Already have an account?{' '}
-            <Link component={RouterLink} to="/login" underline="hover" sx={{ fontWeight: 700, color: '#0b4f5c' }}>
-              Sign in here
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: 2, borderTop: '1px solid #f0f4f1' }}>
+          <Typography variant="caption" sx={{ color: '#5f7464' }}>
+            Already registered?{' '}
+            <Link component={RouterLink} to="/login" sx={{ fontWeight: 800, color: '#1b5e20', textDecoration: 'none' }}>
+              Sign in to your farm →
             </Link>
           </Typography>
-        </Box>
+        </Stack>
       </Box>
 
-      {/* Right Side: Full-Bleed Image with Frosted Glass Bottom Overlay Card */}
+      {/* RIGHT PANEL: Full-Height Farm Photography with Frosted Glass Card */}
       <Box
         sx={{
           position: 'relative',
-          minHeight: { xs: 360, md: '100vh' },
-          backgroundImage: 'url(/images/farm-harvest-hero.jpg)',
+          minHeight: { xs: 340, md: '100vh' },
+          backgroundImage: 'linear-gradient(180deg, rgba(8, 28, 15, 0.15) 0%, rgba(8, 28, 15, 0.65) 100%), url(/images/farm-harvest-hero.jpg)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-end',
-          p: { xs: 2.5, sm: 4, md: 5 },
+          p: { xs: 2.5, sm: 4, lg: 5 },
         }}
       >
         <Box
           sx={{
-            background: 'linear-gradient(135deg, rgba(16, 48, 54, 0.84) 0%, rgba(114, 92, 38, 0.78) 100%)',
-            backdropFilter: 'blur(14px)',
-            borderRadius: 3.5,
-            p: { xs: 3, md: 4 },
+            p: { xs: 2.5, sm: 3.5 },
+            borderRadius: 4,
+            background: 'linear-gradient(135deg, rgba(18, 46, 26, 0.78) 0%, rgba(40, 68, 34, 0.68) 100%)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255, 255, 255, 0.22)',
             color: '#ffffff',
-            border: '1px solid rgba(255, 255, 255, 0.18)',
-            boxShadow: '0 16px 40px rgba(0, 0, 0, 0.28)',
+            boxShadow: '0 20px 45px rgba(0, 0, 0, 0.32)',
+            maxWidth: 640,
           }}
         >
-          <Typography variant="h4" sx={{ fontWeight: 800, fontSize: { xs: '1.45rem', md: '1.85rem' }, lineHeight: 1.25, mb: 1 }}>
-            Every herd, hive, store and harvest in one place
+          <Chip
+            label="Multi-Species Farm Architecture"
+            size="small"
+            sx={{ bgcolor: 'rgba(129, 199, 132, 0.25)', color: '#e8f5e9', fontWeight: 700, mb: 1.5 }}
+          />
+          <Typography variant="h4" fontWeight={800} sx={{ fontSize: { xs: '1.45rem', md: '1.85rem' }, mb: 1 }}>
+            Designed for Modern Mixed Farms
           </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.88)', fontSize: '0.95rem' }}>
-            Run all your farm sections from one integrated system.
+          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.86)', lineHeight: 1.6 }}>
+            Manage goats, sheep, dairy cows, poultry flocks, and beehives with automated vaccination reminders, batch-level stock deduction, and exportable PDF & Excel financial statements.
           </Typography>
         </Box>
       </Box>
