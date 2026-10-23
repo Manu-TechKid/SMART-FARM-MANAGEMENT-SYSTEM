@@ -79,11 +79,11 @@ public class AuthService : IAuthService
         return (true, null, new AuthResponse(token, refresh, user.Id, user.Email!, user.FirstName, user.LastName, roles));
     }
 
-    public async Task<(bool Success, string? Error, AuthResponse? Response)> RefreshTokenAsync(string refreshToken)
+    public Task<(bool Success, string? Error, AuthResponse? Response)> RefreshTokenAsync(string refreshToken)
     {
         // In production: validate stored refresh token. Here we validate via JWT claims.
         // A full implementation stores refresh tokens in DB with expiry.
-        return (false, "Use login to get a new token.", null);
+        return Task.FromResult<(bool, string?, AuthResponse?)>((false, "Use login to get a new token.", null));
     }
 
     public async Task<bool> ForgotPasswordAsync(string email)
