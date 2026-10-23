@@ -1,13 +1,34 @@
 import { useState, type FormEvent } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
-  Alert, Box, Button, Chip, IconButton, InputAdornment, Link, Stack, TextField, Typography,
+  Alert, Box, Button, Chip, Divider, InputAdornment, Stack, TextField, Typography,
 } from '@mui/material';
 import {
-  Visibility, VisibilityOff, EmailOutlined, LockOutlined, PersonOutline, ArrowForward,
+  Visibility, VisibilityOff, EmailOutlined, LockOutlined, PersonOutline,
+  ArrowForward, LoginOutlined, AgricultureOutlined,
 } from '@mui/icons-material';
 import { useAuth } from './AuthContext';
 import { errorMessage } from '../../api/client';
+
+const inputSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: 2.5,
+    bgcolor: '#f8faf8',
+    fontSize: '1rem',
+    '& fieldset': { borderColor: '#d0ddd3', borderWidth: 1.5 },
+    '&:hover fieldset': { borderColor: '#2e7d32' },
+    '&.Mui-focused fieldset': { borderColor: '#1b5e20', borderWidth: 2 },
+    '& input': {
+      py: 1.5,
+      px: 1.5,
+      '&:-webkit-autofill': {
+        WebkitBoxShadow: '0 0 0 100px #f1f7f2 inset !important',
+        WebkitTextFillColor: '#112617 !important',
+        borderRadius: 'inherit',
+      },
+    },
+  },
+};
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -43,67 +64,66 @@ export default function RegisterPage() {
       sx={{
         minHeight: '100vh',
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', md: 'minmax(460px, 46%) 1fr' },
+        gridTemplateColumns: { xs: '1fr', md: 'minmax(500px, 47%) 1fr' },
         bgcolor: '#ffffff',
       }}
     >
-      {/* LEFT PANEL: Full-Bleed Registration Workspace */}
+      {/* LEFT PANEL: Centered Registration Workspace */}
       <Box
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
-          px: { xs: 3, sm: 6, lg: 8 },
-          py: { xs: 3.5, md: 4.5 },
+          justifyContent: 'center',
+          alignItems: 'center',
+          px: { xs: 3, sm: 6, lg: 7 },
+          py: { xs: 4, md: 5 },
           bgcolor: '#ffffff',
-          borderRight: { md: '1px solid #edf2ee' },
+          borderRight: { md: '1px solid #e4ece6' },
         }}
       >
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <Box
-              sx={{
-                width: 44,
-                height: 44,
-                borderRadius: 2.5,
-                background: 'linear-gradient(135deg, #1b5e20 0%, #43a047 100%)',
-                display: 'grid',
-                placeItems: 'center',
-                color: '#fff',
-                fontWeight: 900,
-                fontSize: '1.1rem',
-                boxShadow: '0 6px 16px rgba(46, 125, 50, 0.28)',
-              }}
-            >
-              SF
-            </Box>
-            <Box sx={{ pl: 1.5, borderLeft: '2px solid #e0e8e1' }}>
-              <Typography variant="subtitle1" fontWeight={800} sx={{ lineHeight: 1.1, color: '#132a19' }}>
-                SmartFarm
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#5c7261', fontWeight: 600 }}>
-                Agricultural ERP & Telemetry
-              </Typography>
-            </Box>
+        <Box sx={{ width: '100%', maxWidth: 460 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3.5 }}>
+            <Stack direction="row" spacing={1.8} alignItems="center">
+              <Box
+                sx={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 3,
+                  background: 'linear-gradient(135deg, #1b5e20 0%, #43a047 100%)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: '#fff',
+                  boxShadow: '0 8px 20px rgba(27, 94, 32, 0.28)',
+                }}
+              >
+                <AgricultureOutlined sx={{ fontSize: 30 }} />
+              </Box>
+              <Box>
+                <Typography variant="h5" fontWeight={900} sx={{ lineHeight: 1.1, color: '#112617' }}>
+                  SmartFarm OS
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#4d6653', fontWeight: 600 }}>
+                  Integrated Livestock & Apiary Platform
+                </Typography>
+              </Box>
+            </Stack>
+            <Chip label="New Farm Setup" sx={{ bgcolor: '#e8f5e9', color: '#1b5e20', fontWeight: 800 }} />
           </Stack>
-          <Chip size="small" label="New Farm Setup" sx={{ bgcolor: '#e8f5e9', color: '#1b5e20', fontWeight: 700 }} />
-        </Stack>
 
-        <Box sx={{ width: '100%', maxWidth: 420, mx: 'auto', my: { xs: 4, md: 2 } }}>
-          <Typography variant="h4" fontWeight={800} sx={{ color: '#112617', letterSpacing: -0.5, mb: 0.5 }}>
+          <Typography variant="h4" fontWeight={900} sx={{ color: '#0f2315', letterSpacing: -0.6, mb: 0.8 }}>
             Create Farm Account
           </Typography>
-          <Typography variant="body2" sx={{ color: '#5f7464', mb: 3 }}>
+          <Typography variant="body1" sx={{ color: '#516856', mb: 3, fontSize: '0.98rem' }}>
             Register as a Farm Manager to set up your livestock, apiary, and production modules.
           </Typography>
 
-          {error && <Alert severity="error" sx={{ mb: 2.5, borderRadius: 2 }}>{error}</Alert>}
+          {error && <Alert severity="error" sx={{ mb: 2.5, borderRadius: 2.5 }}>{error}</Alert>}
 
-          <Box component="form" onSubmit={submit} noValidate sx={{ display: 'grid', gap: 2 }}>
+          <Box component="form" onSubmit={submit} noValidate sx={{ display: 'grid', gap: 2.2 }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="caption" fontWeight={700} sx={{ color: '#2b4230', display: 'block', mb: 0.6 }}>
-                  First Name *
+                <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#1b3120', mb: 0.8, fontSize: '0.94rem' }}>
+                  First Name <Box component="span" sx={{ color: '#d32f2f' }}>*</Box>
                 </Typography>
                 <TextField
                   fullWidth
@@ -111,19 +131,19 @@ export default function RegisterPage() {
                   value={form.firstName}
                   onChange={set('firstName')}
                   required
+                  sx={inputSx}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <PersonOutline sx={{ color: '#6b8270', fontSize: 19 }} />
+                        <PersonOutline sx={{ color: '#2e7d32', fontSize: 22 }} />
                       </InputAdornment>
                     ),
-                    sx: { borderRadius: 2.5, bgcolor: '#f9fbf9' },
                   }}
                 />
               </Box>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="caption" fontWeight={700} sx={{ color: '#2b4230', display: 'block', mb: 0.6 }}>
-                  Last Name *
+                <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#1b3120', mb: 0.8, fontSize: '0.94rem' }}>
+                  Last Name <Box component="span" sx={{ color: '#d32f2f' }}>*</Box>
                 </Typography>
                 <TextField
                   fullWidth
@@ -131,14 +151,14 @@ export default function RegisterPage() {
                   value={form.lastName}
                   onChange={set('lastName')}
                   required
-                  InputProps={{ sx: { borderRadius: 2.5, bgcolor: '#f9fbf9' } }}
+                  sx={inputSx}
                 />
               </Box>
             </Stack>
 
             <Box>
-              <Typography variant="caption" fontWeight={700} sx={{ color: '#2b4230', display: 'block', mb: 0.6 }}>
-                Email Address *
+              <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#1b3120', mb: 0.8, fontSize: '0.94rem' }}>
+                Email Address <Box component="span" sx={{ color: '#d32f2f' }}>*</Box>
               </Typography>
               <TextField
                 fullWidth
@@ -147,20 +167,20 @@ export default function RegisterPage() {
                 value={form.email}
                 onChange={set('email')}
                 required
+                sx={inputSx}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <EmailOutlined sx={{ color: '#6b8270', fontSize: 19 }} />
+                      <EmailOutlined sx={{ color: '#2e7d32', fontSize: 22 }} />
                     </InputAdornment>
                   ),
-                  sx: { borderRadius: 2.5, bgcolor: '#f9fbf9' },
                 }}
               />
             </Box>
 
             <Box>
-              <Typography variant="caption" fontWeight={700} sx={{ color: '#2b4230', display: 'block', mb: 0.6 }}>
-                Password *
+              <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#1b3120', mb: 0.8, fontSize: '0.94rem' }}>
+                Password <Box component="span" sx={{ color: '#d32f2f' }}>*</Box>
               </Typography>
               <TextField
                 fullWidth
@@ -171,20 +191,25 @@ export default function RegisterPage() {
                 error={form.password.length > 0 && !passwordOk}
                 helperText="Minimum 8 characters including at least one number"
                 required
+                sx={inputSx}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <LockOutlined sx={{ color: '#6b8270', fontSize: 19 }} />
+                      <LockOutlined sx={{ color: '#2e7d32', fontSize: 22 }} />
                     </InputAdornment>
                   ),
                   endAdornment: (
                     <InputAdornment position="end">
-                      <IconButton size="small" onClick={() => setShowPass((v) => !v)} edge="end">
-                        {showPass ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                      </IconButton>
+                      <Button
+                        size="small"
+                        onClick={() => setShowPass((v) => !v)}
+                        startIcon={showPass ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                        sx={{ textTransform: 'none', fontWeight: 700, color: '#3b5741', minWidth: 'auto', px: 1 }}
+                      >
+                        {showPass ? 'Hide' : 'Show'}
+                      </Button>
                     </InputAdornment>
                   ),
-                  sx: { borderRadius: 2.5, bgcolor: '#f9fbf9' },
                 }}
               />
             </Box>
@@ -196,37 +221,55 @@ export default function RegisterPage() {
               disabled={busy}
               endIcon={<ArrowForward />}
               sx={{
-                mt: 1,
-                py: 1.45,
-                borderRadius: 99,
+                mt: 0.5,
+                py: 1.6,
+                borderRadius: 2.5,
                 fontWeight: 800,
                 textTransform: 'none',
-                fontSize: '0.98rem',
+                fontSize: '1.05rem',
                 background: 'linear-gradient(90deg, #1b5e20 0%, #2e7d32 100%)',
-                boxShadow: '0 8px 20px rgba(27, 94, 32, 0.25)',
+                boxShadow: '0 8px 22px rgba(27, 94, 32, 0.28)',
               }}
             >
               {busy ? 'Creating Workspace…' : 'Create Farm Account'}
             </Button>
+
+            <Divider sx={{ my: 1 }}>
+              <Typography variant="body2" fontWeight={700} sx={{ color: '#6c8271', px: 1 }}>
+                ALREADY HAVE AN ACCOUNT?
+              </Typography>
+            </Divider>
+
+            <Button
+              component={RouterLink}
+              to="/login"
+              variant="outlined"
+              size="large"
+              startIcon={<LoginOutlined />}
+              sx={{
+                py: 1.45,
+                borderRadius: 2.5,
+                fontWeight: 800,
+                textTransform: 'none',
+                fontSize: '1rem',
+                color: '#1b5e20',
+                borderColor: '#1b5e20',
+                borderWidth: 2,
+                '&:hover': { borderWidth: 2, bgcolor: '#eef6f0', borderColor: '#144718' },
+              }}
+            >
+              Sign In to Existing Farm Account
+            </Button>
           </Box>
         </Box>
-
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: 2, borderTop: '1px solid #f0f4f1' }}>
-          <Typography variant="caption" sx={{ color: '#5f7464' }}>
-            Already registered?{' '}
-            <Link component={RouterLink} to="/login" sx={{ fontWeight: 800, color: '#1b5e20', textDecoration: 'none' }}>
-              Sign in to your farm →
-            </Link>
-          </Typography>
-        </Stack>
       </Box>
 
       {/* RIGHT PANEL: Full-Height Farm Photography with Frosted Glass Card */}
       <Box
         sx={{
           position: 'relative',
-          minHeight: { xs: 340, md: '100vh' },
-          backgroundImage: 'linear-gradient(180deg, rgba(8, 28, 15, 0.15) 0%, rgba(8, 28, 15, 0.65) 100%), url(/images/farm-harvest-hero.jpg)',
+          minHeight: { xs: 360, md: '100vh' },
+          backgroundImage: 'linear-gradient(180deg, rgba(8, 28, 15, 0.12) 0%, rgba(8, 28, 15, 0.68) 100%), url(/images/farm-harvest-hero.jpg)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -239,23 +282,22 @@ export default function RegisterPage() {
           sx={{
             p: { xs: 2.5, sm: 3.5 },
             borderRadius: 4,
-            background: 'linear-gradient(135deg, rgba(18, 46, 26, 0.78) 0%, rgba(40, 68, 34, 0.68) 100%)',
+            background: 'linear-gradient(135deg, rgba(16, 42, 23, 0.84) 0%, rgba(36, 64, 30, 0.75) 100%)',
             backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.22)',
+            border: '1px solid rgba(255, 255, 255, 0.24)',
             color: '#ffffff',
-            boxShadow: '0 20px 45px rgba(0, 0, 0, 0.32)',
-            maxWidth: 640,
+            boxShadow: '0 20px 45px rgba(0, 0, 0, 0.35)',
+            maxWidth: 660,
           }}
         >
           <Chip
             label="Multi-Species Farm Architecture"
-            size="small"
-            sx={{ bgcolor: 'rgba(129, 199, 132, 0.25)', color: '#e8f5e9', fontWeight: 700, mb: 1.5 }}
+            sx={{ bgcolor: 'rgba(129, 199, 132, 0.28)', color: '#ffffff', fontWeight: 800, mb: 1.5 }}
           />
-          <Typography variant="h4" fontWeight={800} sx={{ fontSize: { xs: '1.45rem', md: '1.85rem' }, mb: 1 }}>
+          <Typography variant="h4" fontWeight={800} sx={{ fontSize: { xs: '1.5rem', md: '1.9rem' }, mb: 1 }}>
             Designed for Modern Mixed Farms
           </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.86)', lineHeight: 1.6 }}>
+          <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.9)', lineHeight: 1.6, fontSize: '0.96rem' }}>
             Manage goats, sheep, dairy cows, poultry flocks, and beehives with automated vaccination reminders, batch-level stock deduction, and exportable PDF & Excel financial statements.
           </Typography>
         </Box>

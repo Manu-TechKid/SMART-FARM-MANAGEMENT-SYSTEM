@@ -2,12 +2,12 @@ import { useState, type FormEvent } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Alert, Box, Button, Checkbox, Chip, Dialog, DialogActions, DialogContent,
-  DialogTitle, FormControlLabel, IconButton, InputAdornment, Link, Stack,
+  DialogTitle, Divider, FormControlLabel, IconButton, InputAdornment, Link, Stack,
   TextField, Typography,
 } from '@mui/material';
 import {
   Visibility, VisibilityOff, EmailOutlined, LockOutlined,
-  ArrowForward, VerifiedUserOutlined, AutoAwesomeOutlined,
+  ArrowForward, AutoAwesomeOutlined, PersonAddAlt1Outlined, AgricultureOutlined,
 } from '@mui/icons-material';
 import { useAuth } from './AuthContext';
 import { api, errorMessage } from '../../api/client';
@@ -17,7 +17,7 @@ const SHOWCASE_SLIDES = [
   {
     key: 'All',
     icon: '🌾',
-    label: 'All Enterprises',
+    label: 'All Farm',
     image: '/images/farm-harvest-hero.jpg',
     tag: 'Unified AgriTech Command Center',
     title: 'Every herd, flock, hive, and harvest in one platform',
@@ -27,7 +27,7 @@ const SHOWCASE_SLIDES = [
   {
     key: 'Cow',
     icon: '🐄',
-    label: 'Dairy Cattle',
+    label: 'Cattle',
     image: '/images/cows.jpg',
     tag: 'Cattle & Dairy Operations',
     title: 'Precision dairy yields & herd health',
@@ -66,6 +66,26 @@ const SHOWCASE_SLIDES = [
   },
 ];
 
+const inputSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: 2.5,
+    bgcolor: '#f8faf8',
+    fontSize: '1rem',
+    '& fieldset': { borderColor: '#d0ddd3', borderWidth: 1.5 },
+    '&:hover fieldset': { borderColor: '#2e7d32' },
+    '&.Mui-focused fieldset': { borderColor: '#1b5e20', borderWidth: 2 },
+    '& input': {
+      py: 1.55,
+      px: 1.5,
+      '&:-webkit-autofill': {
+        WebkitBoxShadow: '0 0 0 100px #f1f7f2 inset !important',
+        WebkitTextFillColor: '#112617 !important',
+        borderRadius: 'inherit',
+      },
+    },
+  },
+};
+
 export default function LoginPage() {
   const { login, register, refreshFarms, setFarmId } = useAuth();
   const navigate = useNavigate();
@@ -77,7 +97,6 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [slideIdx, setSlideIdx] = useState(0);
 
-  // Forgot password dialog state
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
@@ -152,126 +171,120 @@ export default function LoginPage() {
       sx={{
         minHeight: '100vh',
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', md: 'minmax(460px, 46%) 1fr' },
+        gridTemplateColumns: { xs: '1fr', md: 'minmax(500px, 47%) 1fr' },
         bgcolor: '#ffffff',
       }}
     >
-      {/* LEFT PANEL: Full-Bleed Executive Workspace (No Floating Small Box) */}
+      {/* LEFT PANEL: Cohesive Centered Executive Login Workspace */}
       <Box
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
-          px: { xs: 3, sm: 6, lg: 8 },
-          py: { xs: 3.5, md: 4.5 },
+          justifyContent: 'center',
+          alignItems: 'center',
+          px: { xs: 3, sm: 6, lg: 7 },
+          py: { xs: 4, md: 5 },
           bgcolor: '#ffffff',
-          borderRight: { md: '1px solid #edf2ee' },
+          borderRight: { md: '1px solid #e4ece6' },
         }}
       >
-        {/* Top Brand Header */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <Box
-              sx={{
-                width: 44,
-                height: 44,
-                borderRadius: 2.5,
-                background: 'linear-gradient(135deg, #1b5e20 0%, #43a047 100%)',
-                display: 'grid',
-                placeItems: 'center',
-                color: '#fff',
-                fontWeight: 900,
-                fontSize: '1.1rem',
-                boxShadow: '0 6px 16px rgba(46, 125, 50, 0.28)',
-              }}
-            >
-              SF
-            </Box>
-            <Box sx={{ pl: 1.5, borderLeft: '2px solid #e0e8e1' }}>
-              <Typography variant="subtitle1" fontWeight={800} sx={{ lineHeight: 1.1, color: '#132a19', letterSpacing: -0.3 }}>
-                SmartFarm
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#5c7261', fontWeight: 600 }}>
-                Agricultural ERP & Telemetry
-              </Typography>
-            </Box>
+        <Box sx={{ width: '100%', maxWidth: 460 }}>
+          {/* Prominent Brand Header Right Above Form */}
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+            <Stack direction="row" spacing={1.8} alignItems="center">
+              <Box
+                sx={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 3,
+                  background: 'linear-gradient(135deg, #1b5e20 0%, #43a047 100%)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: '#fff',
+                  boxShadow: '0 8px 20px rgba(27, 94, 32, 0.28)',
+                }}
+              >
+                <AgricultureOutlined sx={{ fontSize: 30 }} />
+              </Box>
+              <Box>
+                <Typography variant="h5" fontWeight={900} sx={{ lineHeight: 1.1, color: '#112617', letterSpacing: -0.4 }}>
+                  SmartFarm OS
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#4d6653', fontWeight: 600 }}>
+                  Integrated Livestock & Apiary Platform
+                </Typography>
+              </Box>
+            </Stack>
+            <Chip
+              label="● SQL Server Online"
+              size="small"
+              sx={{ bgcolor: '#e8f5e9', color: '#1b5e20', fontWeight: 800, fontSize: '0.78rem', px: 0.5 }}
+            />
           </Stack>
 
-          <Chip
-            size="small"
-            label="● Live SQL Server"
-            sx={{
-              bgcolor: '#e8f5e9',
-              color: '#1b5e20',
-              fontWeight: 700,
-              fontSize: '0.72rem',
-            }}
-          />
-        </Stack>
-
-        {/* Center Main Authentication Form */}
-        <Box sx={{ width: '100%', maxWidth: 420, mx: 'auto', my: { xs: 4, md: 2 } }}>
-          {/* Interactive Enterprise Selector Pills */}
-          <Stack direction="row" spacing={0.8} sx={{ mb: 2.5, overflowX: 'auto', pb: 0.5 }}>
+          {/* Wrap-Friendly Enterprise Pills (No Scrollbar!) */}
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 3 }}>
             {SHOWCASE_SLIDES.map((s, idx) => {
               const active = idx === slideIdx;
               return (
                 <Chip
                   key={s.key}
                   label={`${s.icon} ${s.label}`}
-                  size="small"
                   onClick={() => setSlideIdx(idx)}
                   sx={{
                     cursor: 'pointer',
                     fontWeight: 700,
-                    fontSize: '0.75rem',
-                    bgcolor: active ? '#1b5e20' : '#f3f7f4',
-                    color: active ? '#ffffff' : '#334e3a',
-                    border: active ? '1px solid #1b5e20' : '1px solid #e1ebe3',
-                    '&:hover': { bgcolor: active ? '#1b5e20' : '#e6efe8' },
+                    fontSize: '0.84rem',
+                    height: 34,
+                    bgcolor: active ? '#1b5e20' : '#f1f6f2',
+                    color: active ? '#ffffff' : '#263e2b',
+                    border: active ? '1.5px solid #1b5e20' : '1.5px solid #d8e4da',
+                    '&:hover': { bgcolor: active ? '#1b5e20' : '#e2ede4' },
                   }}
                 />
               );
             })}
           </Stack>
 
-          <Typography variant="h4" fontWeight={800} sx={{ color: '#112617', letterSpacing: -0.5, mb: 0.5 }}>
-            Farm Portal Sign In
+          {/* Main Heading */}
+          <Typography variant="h4" fontWeight={900} sx={{ color: '#0f2315', letterSpacing: -0.6, mb: 0.8, fontSize: { xs: '1.75rem', sm: '2.05rem' } }}>
+            Sign in to Your Farm
           </Typography>
-          <Typography variant="body2" sx={{ color: '#5f7464', mb: 3 }}>
-            Livestock, apiaries, production batches, deliveries & finance
+          <Typography variant="body1" sx={{ color: '#516856', mb: 3, fontSize: '0.98rem' }}>
+            Enter your credentials to manage herds, flocks, beehives, production & finance.
           </Typography>
 
-          {error && <Alert severity="error" sx={{ mb: 2.5, borderRadius: 2 }}>{error}</Alert>}
+          {error && <Alert severity="error" sx={{ mb: 2.5, borderRadius: 2.5, fontSize: '0.92rem' }}>{error}</Alert>}
 
-          <Box component="form" onSubmit={submit} noValidate sx={{ display: 'grid', gap: 2.2 }}>
+          {/* Form Fields */}
+          <Box component="form" onSubmit={submit} noValidate sx={{ display: 'grid', gap: 2.4 }}>
             <Box>
-              <Typography variant="caption" fontWeight={700} sx={{ color: '#2b4230', display: 'block', mb: 0.7 }}>
-                Email or Staff ID <Box component="span" sx={{ color: '#d32f2f' }}>*</Box>
+              <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#1b3120', mb: 0.8, fontSize: '0.94rem' }}>
+                Email Address <Box component="span" sx={{ color: '#d32f2f' }}>*</Box>
               </Typography>
               <TextField
                 fullWidth
-                placeholder="name@smartfarm.com"
+                placeholder="Enter your email address"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 error={email.length > 0 && !emailValid}
-                helperText={email.length > 0 && !emailValid ? 'Enter a valid email address' : ''}
+                helperText={email.length > 0 && !emailValid ? 'Please enter a valid email address' : ''}
                 autoComplete="email"
                 required
+                sx={inputSx}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <EmailOutlined sx={{ color: '#6b8270', fontSize: 20 }} />
+                      <EmailOutlined sx={{ color: '#2e7d32', fontSize: 22 }} />
                     </InputAdornment>
                   ),
-                  sx: { borderRadius: 2.5, bgcolor: '#f9fbf9' },
                 }}
               />
             </Box>
 
             <Box>
-              <Typography variant="caption" fontWeight={700} sx={{ color: '#2b4230', display: 'block', mb: 0.7 }}>
+              <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#1b3120', mb: 0.8, fontSize: '0.94rem' }}>
                 Password <Box component="span" sx={{ color: '#d32f2f' }}>*</Box>
               </Typography>
               <TextField
@@ -282,47 +295,46 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 required
+                sx={inputSx}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <LockOutlined sx={{ color: '#6b8270', fontSize: 20 }} />
+                      <LockOutlined sx={{ color: '#2e7d32', fontSize: 22 }} />
                     </InputAdornment>
                   ),
                   endAdornment: (
                     <InputAdornment position="end">
-                      <IconButton
+                      <Button
                         size="small"
                         onClick={() => setShowPass((v) => !v)}
-                        edge="end"
-                        aria-label="Toggle password visibility"
+                         startIcon={showPass ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                        sx={{ textTransform: 'none', fontWeight: 700, color: '#3b5741', minWidth: 'auto', px: 1 }}
                       >
-                        {showPass ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                      </IconButton>
+                        {showPass ? 'Hide' : 'Show'}
+                      </Button>
                     </InputAdornment>
                   ),
-                  sx: { borderRadius: 2.5, bgcolor: '#f9fbf9' },
                 }}
               />
             </Box>
 
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: -0.5 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
               <FormControlLabel
                 control={
                   <Checkbox
-                    size="small"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    sx={{ color: '#2e7d32', '&.Mui-checked': { color: '#2e7d32' } }}
+                    sx={{ color: '#2e7d32', '&.Mui-checked': { color: '#1b5e20' } }}
                   />
                 }
-                label={<Typography variant="caption" sx={{ color: '#4d6352', fontWeight: 600 }}>Keep session active (30 days)</Typography>}
+                label={<Typography variant="body2" fontWeight={600} sx={{ color: '#364d3b' }}>Remember me for 30 days</Typography>}
               />
               <Link
                 component="button"
                 type="button"
-                variant="caption"
+                variant="body2"
                 onClick={() => { setForgotEmail(email); setForgotSent(false); setForgotOpen(true); }}
-                sx={{ fontWeight: 700, color: '#1b5e20', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                sx={{ fontWeight: 800, color: '#1b5e20', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
               >
                 Forgot password?
               </Link>
@@ -335,94 +347,100 @@ export default function LoginPage() {
               disabled={busy}
               endIcon={<ArrowForward />}
               sx={{
-                py: 1.45,
-                borderRadius: 99,
+                py: 1.6,
+                borderRadius: 2.5,
                 fontWeight: 800,
                 textTransform: 'none',
-                fontSize: '0.98rem',
+                fontSize: '1.05rem',
                 background: 'linear-gradient(90deg, #1b5e20 0%, #2e7d32 100%)',
-                boxShadow: '0 8px 20px rgba(27, 94, 32, 0.25)',
+                boxShadow: '0 8px 22px rgba(27, 94, 32, 0.28)',
                 '&:hover': { background: 'linear-gradient(90deg, #144718 0%, #1b5e20 100%)' },
               }}
             >
-              {busy ? 'Authenticating…' : 'Sign In to Workspace'}
+              {busy ? 'Signing in…' : 'Sign In to Farm Portal'}
             </Button>
 
-            {/* Instant Interactive Demo Workspace Box */}
+            {/* Instant Sandbox Demo Card */}
             <Box
               sx={{
-                mt: 1,
                 p: 2,
-                borderRadius: 3,
-                bgcolor: '#f4f9f5',
-                border: '1px dashed #b8d8be',
+                borderRadius: 2.5,
+                bgcolor: '#f3f8f4',
+                border: '1.5px solid #c5dec9',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: 1.5,
+                gap: 2,
               }}
             >
               <Box>
-                <Stack direction="row" spacing={0.7} alignItems="center">
-                  <AutoAwesomeOutlined sx={{ fontSize: 16, color: '#ef6c00' }} />
-                  <Typography variant="caption" fontWeight={800} sx={{ color: '#1b5e20' }}>
-                    INSTANT SANDBOX PREVIEW
+                <Stack direction="row" spacing={0.8} alignItems="center">
+                  <AutoAwesomeOutlined sx={{ fontSize: 18, color: '#ef6c00' }} />
+                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#1b5e20' }}>
+                    Interactive [DEMO] Farm
                   </Typography>
                 </Stack>
-                <Typography variant="caption" sx={{ color: '#526957', display: 'block' }}>
-                  Explore pre-loaded goats, cows, hives & reports
+                <Typography variant="body2" sx={{ color: '#48604d', fontSize: '0.85rem' }}>
+                  Pre-loaded goats, cows, sheep, chickens & beehives
                 </Typography>
               </Box>
               <Button
                 type="button"
                 variant="contained"
                 color="warning"
-                size="small"
                 disabled={busy}
                 onClick={launchDemo}
                 sx={{
-                  borderRadius: 99,
+                  borderRadius: 2,
                   fontWeight: 800,
                   textTransform: 'none',
-                  px: 2,
-                  py: 0.8,
+                  px: 2.2,
+                  py: 1,
+                  fontSize: '0.9rem',
                   whiteSpace: 'nowrap',
-                  boxShadow: 'none',
                 }}
               >
-                Launch [DEMO]
+                Launch Demo
               </Button>
             </Box>
+
+            <Divider sx={{ my: 0.5 }}>
+              <Typography variant="body2" fontWeight={700} sx={{ color: '#6c8271', px: 1 }}>
+                NEW TO SMARTFARM?
+              </Typography>
+            </Divider>
+
+            {/* Prominent Registration Button & Label */}
+            <Button
+              component={RouterLink}
+              to="/register"
+              variant="outlined"
+              size="large"
+              startIcon={<PersonAddAlt1Outlined />}
+              sx={{
+                py: 1.45,
+                borderRadius: 2.5,
+                fontWeight: 800,
+                textTransform: 'none',
+                fontSize: '1rem',
+                color: '#1b5e20',
+                borderColor: '#1b5e20',
+                borderWidth: 2,
+                '&:hover': { borderWidth: 2, bgcolor: '#eef6f0', borderColor: '#144718' },
+              }}
+            >
+              Register a New Farm Account
+            </Button>
           </Box>
         </Box>
-
-        {/* Bottom Footer */}
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          justifyContent="space-between"
-          alignItems="center"
-          spacing={1}
-          sx={{ pt: 2, borderTop: '1px solid #f0f4f1' }}
-        >
-          <Typography variant="caption" sx={{ color: '#5f7464' }}>
-            New farm operation?{' '}
-            <Link component={RouterLink} to="/register" sx={{ fontWeight: 800, color: '#1b5e20', textDecoration: 'none' }}>
-              Register farm account →
-            </Link>
-          </Typography>
-          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: '#7a8f7e' }}>
-            <VerifiedUserOutlined sx={{ fontSize: 14 }} />
-            <Typography variant="caption">Role-Isolated JWT Security</Typography>
-          </Stack>
-        </Stack>
       </Box>
 
       {/* RIGHT PANEL: Full-Height Farm Photography with Floating Frosted-Glass Showcase Card */}
       <Box
         sx={{
           position: 'relative',
-          minHeight: { xs: 360, md: '100vh' },
-          backgroundImage: `linear-gradient(180deg, rgba(8, 28, 15, 0.15) 0%, rgba(8, 28, 15, 0.65) 100%), url(${activeSlide.image})`,
+          minHeight: { xs: 380, md: '100vh' },
+          backgroundImage: `linear-gradient(180deg, rgba(8, 28, 15, 0.12) 0%, rgba(8, 28, 15, 0.68) 100%), url(${activeSlide.image})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -432,28 +450,27 @@ export default function LoginPage() {
           transition: 'background-image 0.45s ease-in-out',
         }}
       >
-        {/* Floating Glassmorphism Card */}
         <Box
           sx={{
             p: { xs: 2.5, sm: 3.5 },
             borderRadius: 4,
-            background: 'linear-gradient(135deg, rgba(18, 46, 26, 0.78) 0%, rgba(40, 68, 34, 0.68) 100%)',
+            background: 'linear-gradient(135deg, rgba(16, 42, 23, 0.84) 0%, rgba(36, 64, 30, 0.75) 100%)',
             backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.22)',
+            border: '1px solid rgba(255, 255, 255, 0.24)',
             color: '#ffffff',
-            boxShadow: '0 20px 45px rgba(0, 0, 0, 0.32)',
-            maxWidth: 640,
+            boxShadow: '0 20px 45px rgba(0, 0, 0, 0.35)',
+            maxWidth: 660,
           }}
         >
           <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} sx={{ mb: 1.5 }}>
             <Chip
               label={activeSlide.tag}
-              size="small"
               sx={{
-                bgcolor: 'rgba(129, 199, 132, 0.25)',
-                color: '#e8f5e9',
-                border: '1px solid rgba(129, 199, 132, 0.45)',
-                fontWeight: 700,
+                bgcolor: 'rgba(129, 199, 132, 0.28)',
+                color: '#ffffff',
+                border: '1px solid rgba(129, 199, 132, 0.5)',
+                fontWeight: 800,
+                fontSize: '0.82rem',
               }}
             />
             <Stack direction="row" spacing={1}>
@@ -462,12 +479,13 @@ export default function LoginPage() {
                   key={m}
                   variant="caption"
                   sx={{
-                    px: 1.2,
-                    py: 0.3,
+                    px: 1.4,
+                    py: 0.4,
                     borderRadius: 99,
-                    bgcolor: 'rgba(255,255,255,0.12)',
-                    color: 'rgba(255,255,255,0.92)',
-                    fontWeight: 600,
+                    bgcolor: 'rgba(255,255,255,0.16)',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
                     display: { xs: 'none', sm: 'inline-block' },
                   }}
                 >
@@ -477,39 +495,37 @@ export default function LoginPage() {
             </Stack>
           </Stack>
 
-          <Typography variant="h4" fontWeight={800} sx={{ fontSize: { xs: '1.45rem', md: '1.85rem' }, lineHeight: 1.25, mb: 1 }}>
+          <Typography variant="h4" fontWeight={800} sx={{ fontSize: { xs: '1.5rem', md: '1.9rem' }, lineHeight: 1.25, mb: 1 }}>
             {activeSlide.title}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.86)', lineHeight: 1.6, mb: 2.5 }}>
+          <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.9)', lineHeight: 1.6, mb: 2.5, fontSize: '0.96rem' }}>
             {activeSlide.subtitle}
           </Typography>
 
-          {/* Interactive Thumbnail Strip inside the Glass Card */}
           <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
-            <Stack direction="row" spacing={1.2} sx={{ overflowX: 'auto' }}>
+            <Stack direction="row" spacing={1.2}>
               {SHOWCASE_SLIDES.map((s, idx) => (
                 <Box
                   key={s.image}
                   onClick={() => setSlideIdx(idx)}
                   sx={{
-                    width: 60,
-                    height: 40,
+                    width: 64,
+                    height: 44,
                     borderRadius: 1.5,
                     backgroundImage: `url(${s.image})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     cursor: 'pointer',
-                    border: idx === slideIdx ? '2px solid #a5d6a7' : '1.5px solid rgba(255,255,255,0.3)',
-                    opacity: idx === slideIdx ? 1 : 0.6,
+                    border: idx === slideIdx ? '2.5px solid #a5d6a7' : '1.5px solid rgba(255,255,255,0.35)',
+                    opacity: idx === slideIdx ? 1 : 0.65,
                     transition: 'all 0.2s',
-                    flexShrink: 0,
                     '&:hover': { opacity: 1 },
                   }}
                   title={s.label}
                 />
               ))}
             </Stack>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap' }}>
+            <Typography variant="body2" fontWeight={700} sx={{ color: 'rgba(255,255,255,0.85)' }}>
               {slideIdx + 1} / {SHOWCASE_SLIDES.length}
             </Typography>
           </Stack>
