@@ -121,7 +121,7 @@ export default function DashboardPage() {
       count: data.totalChickens,
       unit: 'Birds in Flocks',
       sub: `${data.todayEggsCount} eggs collected today`,
-      image: '/images/farm-harvest-hero.jpg',
+      image: '/images/chickens.jpg',
       to: '/livestock',
     },
     {

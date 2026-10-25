@@ -131,7 +131,7 @@ export default function LivestockPage() {
           { key: 'Goat', label: 'Goats', subtitle: 'Boer & Dairy Herd', img: '/images/goats.jpg' },
           { key: 'Sheep', label: 'Sheep', subtitle: 'Flock & Wool', img: '/images/sheep.jpg' },
           { key: 'Cow', label: 'Cows', subtitle: 'Dairy & Beef Cattle', img: '/images/cows.jpg' },
-          { key: 'Chicken', label: 'Chickens', subtitle: 'Layers & Broilers', img: '/images/farm-harvest-hero.jpg' },
+          { key: 'Chicken', label: 'Chickens', subtitle: 'Layers & Broilers', img: '/images/chickens.jpg' },
         ].map((item) => {
           const active = species === item.key;
           return (

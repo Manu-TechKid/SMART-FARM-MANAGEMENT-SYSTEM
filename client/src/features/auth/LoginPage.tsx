@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useState, useEffect, type FormEvent } from 'react';
+import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Alert, Box, Button, Checkbox, Chip, Dialog, DialogActions, DialogContent,
   DialogTitle, Divider, FormControlLabel, InputAdornment, Link, Stack,
@@ -55,6 +55,16 @@ const SHOWCASE_SLIDES = [
     metrics: ['Wool Batching', 'Pasture Sections', 'Flock Analytics'],
   },
   {
+    key: 'Chicken',
+    icon: '🐔',
+    label: 'Poultry',
+    image: '/images/chickens.jpg',
+    tag: 'Poultry & Egg Operations',
+    title: 'Flock cycles, layer yields & egg harvests',
+    subtitle: 'Track batch mortality, feed conversion ratios, daily egg crates, and brooder temperatures with instant alerts.',
+    metrics: ['Daily Egg Logs', 'Mortality Tracker', 'Feed Conversion'],
+  },
+  {
     key: 'Beehive',
     icon: '🐝',
     label: 'Apiaries',
@@ -89,6 +99,7 @@ const inputSx = {
 export default function LoginPage() {
   const { login, register, refreshFarms, setFarmId } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -100,6 +111,27 @@ export default function LoginPage() {
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+  const [showResetForm, setShowResetForm] = useState(false);
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetting, setResetting] = useState(false);
+  const [resetMsg, setResetMsg] = useState<{ severity: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    const tokenParam = searchParams.get('token');
+    const emailParam = searchParams.get('email');
+    const action = searchParams.get('action');
+    if (tokenParam || action === 'reset') {
+      if (tokenParam) setResetToken(tokenParam);
+      if (emailParam) {
+        setForgotEmail(emailParam);
+        setEmail(emailParam);
+      }
+      setShowResetForm(true);
+      setForgotOpen(true);
+    }
+  }, [searchParams]);
 
   const emailValid = /^\S+@\S+\.\S+$/.test(email);
   const activeSlide = SHOWCASE_SLIDES[slideIdx];
@@ -162,8 +194,59 @@ export default function LoginPage() {
 
   const handleForgotSubmit = async () => {
     if (!forgotEmail.trim()) return;
-    await api.post('/auth/forgot-password', { email: forgotEmail.trim() }).catch(() => undefined);
-    setForgotSent(true);
+    setResetMsg(null);
+    setBusy(true);
+    try {
+      await api.post('/auth/forgot-password', { email: forgotEmail.trim() });
+      setForgotSent(true);
+    } catch (err) {
+      setResetMsg({ severity: 'error', text: errorMessage(err) });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleResetSubmit = async () => {
+    setResetMsg(null);
+    if (!forgotEmail.trim() || !resetToken.trim() || !newPassword) {
+      setResetMsg({ severity: 'error', text: 'Please provide email, reset token, and your new password.' });
+      return;
+    }
+    if (newPassword.length < 8) {
+      setResetMsg({ severity: 'error', text: 'New password must be at least 8 characters long.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setResetMsg({ severity: 'error', text: 'New password and confirm password do not match.' });
+      return;
+    }
+
+    setResetting(true);
+    try {
+      await api.post('/auth/reset-password', {
+        email: forgotEmail.trim(),
+        token: resetToken.trim(),
+        newPassword,
+      });
+      setResetMsg({
+        severity: 'success',
+        text: 'Password updated successfully! Logging you in...',
+      });
+      setEmail(forgotEmail.trim());
+      setPassword(newPassword);
+      setSearchParams({});
+      setTimeout(() => {
+        setForgotOpen(false);
+        setShowResetForm(false);
+        setResetToken('');
+        setNewPassword('');
+        setConfirmPassword('');
+      }, 2000);
+    } catch (err) {
+      setResetMsg({ severity: 'error', text: errorMessage(err) });
+    } finally {
+      setResetting(false);
+    }
   };
 
   return (
@@ -532,36 +615,162 @@ export default function LoginPage() {
         </Box>
       </Box>
 
-      {/* Forgot Password Dialog */}
-      <Dialog open={forgotOpen} onClose={() => setForgotOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle fontWeight={800}>Reset Farm Account Password</DialogTitle>
+      {/* Forgot / Reset Password Dialog */}
+      <Dialog
+        open={forgotOpen}
+        onClose={() => {
+          setForgotOpen(false);
+          setResetMsg(null);
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle fontWeight={800}>
+          {showResetForm ? 'Set New Farm Password' : 'Reset Farm Account Password'}
+        </DialogTitle>
         <DialogContent>
-          {forgotSent ? (
-            <Alert severity="success" sx={{ mt: 1 }}>
-              If an account exists for <strong>{forgotEmail}</strong>, a password reset token has been generated.
-            </Alert>
-          ) : (
-            <Stack spacing={2} sx={{ mt: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Enter your registered email address to request a password reset link.
-              </Typography>
-              <TextField
-                label="Registered Email"
-                type="email"
-                value={forgotEmail}
-                onChange={(e) => setForgotEmail(e.target.value)}
-                fullWidth
-                required
-              />
-            </Stack>
-          )}
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            {resetMsg && (
+              <Alert severity={resetMsg.severity}>
+                {resetMsg.text}
+              </Alert>
+            )}
+
+            {showResetForm ? (
+              <>
+                <Typography variant="body2" color="text.secondary">
+                  Enter your email, the reset token received in your email, and choose your new password.
+                </Typography>
+                <TextField
+                  label="Registered Email"
+                  type="email"
+                  size="small"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  fullWidth
+                  required
+                />
+                <TextField
+                  label="Reset Token"
+                  size="small"
+                  value={resetToken}
+                  onChange={(e) => setResetToken(e.target.value)}
+                  placeholder="Paste token from email"
+                  fullWidth
+                  required
+                />
+                <TextField
+                  label="New Password"
+                  type="password"
+                  size="small"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  fullWidth
+                  required
+                />
+                <TextField
+                  label="Confirm New Password"
+                  type="password"
+                  size="small"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  fullWidth
+                  required
+                />
+                <Link
+                  component="button"
+                  type="button"
+                  variant="caption"
+                  onClick={() => {
+                    setShowResetForm(false);
+                    setResetMsg(null);
+                  }}
+                  sx={{ textAlign: 'left', color: '#2e7d32', fontWeight: 600 }}
+                >
+                  &larr; Request a new email link instead
+                </Link>
+              </>
+            ) : (
+              <>
+                {forgotSent ? (
+                  <>
+                    <Alert severity="success">
+                      If an account exists for <strong>{forgotEmail}</strong>, password reset instructions have been dispatched via Resend. Check your inbox and spam folder!
+                    </Alert>
+                    <Button
+                      variant="outlined"
+                      color="success"
+                      size="small"
+                      onClick={() => setShowResetForm(true)}
+                      sx={{ textTransform: 'none', fontWeight: 700 }}
+                    >
+                      Enter Token & Set New Password &rarr;
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Typography variant="body2" color="text.secondary">
+                      Enter your registered email address to receive password reset instructions via Resend.
+                    </Typography>
+                    <TextField
+                      label="Registered Email"
+                      type="email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      fullWidth
+                      required
+                      autoFocus
+                    />
+                    <Link
+                      component="button"
+                      type="button"
+                      variant="caption"
+                      onClick={() => {
+                        setShowResetForm(true);
+                        setResetMsg(null);
+                      }}
+                      sx={{ textAlign: 'left', color: '#2e7d32', fontWeight: 600 }}
+                    >
+                      Already have a token? Set new password here &rarr;
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
+          </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setForgotOpen(false)}>Close</Button>
-          {!forgotSent && (
-            <Button variant="contained" onClick={handleForgotSubmit}>
-              Send Reset Instructions
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button
+            onClick={() => {
+              setForgotOpen(false);
+              setResetMsg(null);
+            }}
+          >
+            Close
+          </Button>
+          {showResetForm ? (
+            <Button
+              variant="contained"
+              color="success"
+              disabled={resetting}
+              onClick={handleResetSubmit}
+              sx={{ fontWeight: 700 }}
+            >
+              {resetting ? 'Updating...' : 'Save New Password'}
             </Button>
+          ) : (
+            !forgotSent && (
+              <Button
+                variant="contained"
+                color="success"
+                disabled={busy}
+                onClick={handleForgotSubmit}
+                sx={{ fontWeight: 700 }}
+              >
+                {busy ? 'Sending...' : 'Send Reset Instructions'}
+              </Button>
+            )
           )}
         </DialogActions>
       </Dialog>
