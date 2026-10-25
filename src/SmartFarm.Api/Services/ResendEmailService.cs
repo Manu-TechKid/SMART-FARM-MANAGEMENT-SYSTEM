@@ -81,6 +81,40 @@ public class ResendEmailService : IEmailService
                 _logger.LogError(
                     "Resend email dispatch to {ToEmail} failed with status {StatusCode}: {Response}",
                     toEmail, response.StatusCode, responseBody);
+
+                // Handle Resend Free Tier restriction: can only send to account owner's email
+                var match = System.Text.RegularExpressions.Regex.Match(responseBody, @"to your own email address \(([^)]+)\)");
+                if (match.Success)
+                {
+                    var ownerEmail = match.Groups[1].Value.Trim();
+                    _logger.LogInformation("Falling back to Resend account owner email: {OwnerEmail}", ownerEmail);
+
+                    var fallbackHtml = $@"<div style='background: #fff3cd; color: #856404; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; border: 1px solid #ffeeba;'>
+                        <strong>Resend Testing Mode Notice:</strong> This password reset was requested for <strong>{toEmail}</strong>, but was forwarded to your verified Resend account (<strong>{ownerEmail}</strong>) because a custom domain has not yet been verified at resend.com.
+                    </div>" + htmlContent;
+
+                    var retryPayload = new ResendEmailPayload
+                    {
+                        From = fromEmail,
+                        To = new List<string> { ownerEmail },
+                        Subject = $"[For: {toEmail}] {subject}",
+                        Html = fallbackHtml
+                    };
+
+                    using var retryRequest = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails")
+                    {
+                        Content = new StringContent(JsonSerializer.Serialize(retryPayload), Encoding.UTF8, "application/json")
+                    };
+                    retryRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey.Trim());
+
+                    var retryResponse = await _httpClient.SendAsync(retryRequest);
+                    if (retryResponse.IsSuccessStatusCode)
+                    {
+                        _logger.LogInformation("Successfully sent testing email to Resend account owner: {OwnerEmail}", ownerEmail);
+                        return true;
+                    }
+                }
+
                 return false;
             }
 
