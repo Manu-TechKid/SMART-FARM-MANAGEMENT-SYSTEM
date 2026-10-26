@@ -235,6 +235,14 @@ public record CreateProductionRequest(
     string? Notes
 );
 
+public record UpdateProductionRequest(
+    decimal Quantity,
+    decimal RejectedQuantity,
+    string? QualityStatus,
+    DateTime ProductionDate,
+    string? Notes
+);
+
 public record ProductionSummaryResponse(
     string ProductType,
     decimal TotalQuantity,

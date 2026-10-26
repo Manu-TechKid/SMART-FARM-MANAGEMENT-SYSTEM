@@ -162,6 +162,55 @@ public class ProductionController : ControllerBase
         }
     }
 
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateRecord(int farmId, int id, [FromBody] UpdateProductionRequest request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var record = await _db.ProductionRecords.Include(p => p.Batch).FirstOrDefaultAsync(p => p.FarmId == farmId && p.Id == id);
+        if (record == null) return NotFound();
+
+        if (record.Batch != null)
+        {
+            var oldAccepted = record.Quantity - record.RejectedQuantity;
+            var newAccepted = request.Quantity - request.RejectedQuantity;
+            var diff = newAccepted - oldAccepted;
+            record.Batch.TotalQuantity += diff;
+            record.Batch.AvailableQuantity = Math.Max(0, record.Batch.AvailableQuantity + diff);
+        }
+
+        record.Quantity = request.Quantity;
+        record.RejectedQuantity = request.RejectedQuantity;
+        record.QualityStatus = request.QualityStatus ?? record.QualityStatus;
+        record.ProductionDate = request.ProductionDate;
+        record.Notes = request.Notes;
+        record.UpdatedBy = UserId;
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteRecord(int farmId, int id)
+    {
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var record = await _db.ProductionRecords.Include(p => p.Batch).FirstOrDefaultAsync(p => p.FarmId == farmId && p.Id == id);
+        if (record == null) return NotFound();
+
+        if (record.Batch != null)
+        {
+            var accepted = record.Quantity - record.RejectedQuantity;
+            record.Batch.TotalQuantity = Math.Max(0, record.Batch.TotalQuantity - accepted);
+            record.Batch.AvailableQuantity = Math.Max(0, record.Batch.AvailableQuantity - accepted);
+        }
+
+        _db.ProductionRecords.Remove(record);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpGet("batches")]
     public async Task<IActionResult> GetBatches(int farmId, [FromQuery] string? productType)
     {

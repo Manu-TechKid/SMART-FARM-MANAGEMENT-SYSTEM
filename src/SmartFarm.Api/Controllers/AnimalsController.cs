@@ -166,6 +166,33 @@ public class AnimalsController : ControllerBase
         return NoContent();
     }
 
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteAnimal(int farmId, int id)
+    {
+        if (!await CanAccess(farmId)) return Forbid();
+
+        var animal = await _db.Animals
+            .Include(a => a.Events)
+            .Include(a => a.VaccinationRecords)
+            .Include(a => a.HealthRecords)
+            .FirstOrDefaultAsync(a => a.FarmId == farmId && a.Id == id);
+        if (animal == null) return NotFound();
+
+        var breeding = await _db.BreedingRecords.Where(b => b.DamId == id || b.SireId == id).ToListAsync();
+        _db.BreedingRecords.RemoveRange(breeding);
+
+        var prodRecords = await _db.ProductionRecords.Where(p => p.AnimalId == id).ToListAsync();
+        foreach (var p in prodRecords) p.AnimalId = null;
+
+        _db.AnimalEvents.RemoveRange(animal.Events);
+        _db.VaccinationRecords.RemoveRange(animal.VaccinationRecords);
+        _db.HealthRecords.RemoveRange(animal.HealthRecords);
+        _db.Animals.Remove(animal);
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpPost("{id:int}/events")]
     public async Task<IActionResult> AddEvent(int farmId, int id, [FromBody] AddEventRequest request)
     {
@@ -253,6 +280,24 @@ public class AnimalsController : ControllerBase
         return NoContent();
     }
 
+    [HttpDelete("~/api/farms/{farmId:int}/groups/{id:int}")]
+    public async Task<IActionResult> DeleteGroup(int farmId, int id)
+    {
+        if (!await CanAccess(farmId)) return Forbid();
+        var group = await _db.AnimalGroups.FirstOrDefaultAsync(g => g.FarmId == farmId && g.Id == id);
+        if (group == null) return NotFound();
+
+        var animals = await _db.Animals.Where(a => a.GroupId == id).ToListAsync();
+        foreach (var a in animals) a.GroupId = null;
+
+        var prodRecords = await _db.ProductionRecords.Where(p => p.GroupId == id).ToListAsync();
+        foreach (var p in prodRecords) p.GroupId = null;
+
+        _db.AnimalGroups.Remove(group);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     // ---- Breeding Records ----
     [HttpGet("~/api/farms/{farmId:int}/breeding")]
     public async Task<IActionResult> GetBreedingRecords(int farmId, [FromQuery] string? status)
@@ -328,6 +373,18 @@ public class AnimalsController : ControllerBase
         if (request.Status == BreedingStatus.BirthConfirmed && rec.ActualDOB == null)
             rec.ActualDOB = DateTime.UtcNow;
 
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpDelete("~/api/farms/{farmId:int}/breeding/{id:int}")]
+    public async Task<IActionResult> DeleteBreedingRecord(int farmId, int id)
+    {
+        if (!await CanAccess(farmId)) return Forbid();
+        var rec = await _db.BreedingRecords.FirstOrDefaultAsync(b => b.FarmId == farmId && b.Id == id);
+        if (rec == null) return NotFound();
+
+        _db.BreedingRecords.Remove(rec);
         await _db.SaveChangesAsync();
         return NoContent();
     }

@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Stack, Tab, Table,
-  TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, TextField, Typography,
+  Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Paper, Stack, Tab, Table,
+  TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
+import { EditOutlined, DeleteOutline } from '@mui/icons-material';
 import { api, errorMessage } from '../../api/client';
 import { useAuth } from '../auth/AuthContext';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 const TASK_STATUSES = ['Pending', 'InProgress', 'Completed', 'Overdue', 'Cancelled'];
@@ -28,6 +30,11 @@ export default function TasksPage() {
   const [msg, setMsg] = useState('');
   const [form, setForm] = useState({ title: '', description: '', dueDate: today(), priority: 'Medium', category: 'General' });
 
+  // Edit / Delete state
+  const [editTarget, setEditTarget] = useState<TaskRow | null>(null);
+  const [editForm, setEditForm] = useState({ title: '', description: '', dueDate: today(), priority: 'Medium', category: 'General' });
+  const [deleteTarget, setDeleteTarget] = useState<TaskRow | null>(null);
+
   const { data: tasks } = useQuery({
     queryKey: ['tasks', farmId],
     enabled: !!farmId,
@@ -48,7 +55,19 @@ export default function TasksPage() {
 
   const createTask = useMutation({
     mutationFn: () => api.post(`/farms/${farmId}/tasks`, form),
-    onSuccess: () => { refresh(); setOpen(false); },
+    onSuccess: () => { refresh(); setOpen(false); setForm({ title: '', description: '', dueDate: today(), priority: 'Medium', category: 'General' }); },
+    onError: (e) => setErr(errorMessage(e)),
+  });
+
+  const updateTask = useMutation({
+    mutationFn: () => api.put(`/farms/${farmId}/tasks/${editTarget!.id}`, editForm),
+    onSuccess: () => { refresh(); setEditTarget(null); },
+    onError: (e) => setErr(errorMessage(e)),
+  });
+
+  const deleteTask = useMutation({
+    mutationFn: (id: number) => api.delete(`/farms/${farmId}/tasks/${id}`),
+    onSuccess: () => { refresh(); setDeleteTarget(null); },
     onError: (e) => setErr(errorMessage(e)),
   });
 
@@ -108,7 +127,7 @@ export default function TasksPage() {
               <TableHead>
                 <TableRow>
                   <TableCell>Task</TableCell><TableCell>Category</TableCell><TableCell>Priority</TableCell>
-                  <TableCell>Due Date</TableCell><TableCell>Status</TableCell><TableCell align="right">Update Status</TableCell>
+                  <TableCell>Due Date</TableCell><TableCell>Status</TableCell><TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -128,12 +147,35 @@ export default function TasksPage() {
                       <Chip size="small" label={t.status} color={t.status === 'Completed' ? 'success' : t.status === 'Overdue' ? 'error' : 'info'} />
                     </TableCell>
                     <TableCell align="right">
-                      <TextField
-                        select size="small" variant="standard" value={t.status}
-                        onChange={(e) => updateStatus.mutate({ id: t.id, status: e.target.value })}
-                      >
-                        {TASK_STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
-                      </TextField>
+                      <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+                        <TextField
+                          select size="small" variant="standard" value={t.status}
+                          onChange={(e) => updateStatus.mutate({ id: t.id, status: e.target.value })}
+                          sx={{ minWidth: 100 }}
+                        >
+                          {TASK_STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                        </TextField>
+                        <Tooltip title="Edit Task">
+                          <IconButton size="small" onClick={() => {
+                            setErr('');
+                            setEditTarget(t);
+                            setEditForm({
+                              title: t.title,
+                              description: t.description || '',
+                              dueDate: t.dueDate ? t.dueDate.slice(0, 10) : today(),
+                              priority: t.priority,
+                              category: t.category || 'General',
+                            });
+                          }}>
+                            <EditOutlined fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete Task">
+                          <IconButton size="small" color="error" onClick={() => setDeleteTarget(t)}>
+                            <DeleteOutline fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -185,6 +227,7 @@ export default function TasksPage() {
         </Stack>
       )}
 
+      {/* Create Task Dialog */}
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="xs">
         <Box component="form" onSubmit={(e: FormEvent) => {
           e.preventDefault();
@@ -206,9 +249,52 @@ export default function TasksPage() {
             <TextField label="Due date" type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} InputLabelProps={{ shrink: true }} />
             <TextField label="Instructions / Notes" multiline minRows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           </DialogContent>
-          <DialogActions><Button onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" variant="contained">Save Task</Button></DialogActions>
+          <DialogActions>
+            <Button onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={createTask.isPending}>Save Task</Button>
+          </DialogActions>
         </Box>
       </Dialog>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={!!editTarget} onClose={() => setEditTarget(null)} fullWidth maxWidth="xs">
+        <Box component="form" onSubmit={(e: FormEvent) => {
+          e.preventDefault();
+          if (!editForm.title.trim()) { setErr('Task title is required.'); return; }
+          updateTask.mutate();
+        }} noValidate>
+          <DialogTitle>Edit Farm Task</DialogTitle>
+          <DialogContent sx={{ display: 'grid', gap: 2, pt: 1 }}>
+            {err && <Alert severity="error">{err}</Alert>}
+            <TextField label="Task title" required value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} sx={{ mt: 1 }} />
+            <Stack direction="row" spacing={2}>
+              <TextField select label="Category" fullWidth value={editForm.category} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}>
+                {CATEGORIES.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+              </TextField>
+              <TextField select label="Priority" fullWidth value={editForm.priority} onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}>
+                {PRIORITIES.map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
+              </TextField>
+            </Stack>
+            <TextField label="Due date" type="date" value={editForm.dueDate} onChange={(e) => setEditForm({ ...editForm, dueDate: e.target.value })} InputLabelProps={{ shrink: true }} />
+            <TextField label="Instructions / Notes" multiline minRows={2} value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditTarget(null)}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={updateTask.isPending}>Save Changes</Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+
+      {/* Delete Task Confirmation */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Task"
+        message={`Are you sure you want to delete task "${deleteTarget?.title}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        busy={deleteTask.isPending}
+        onConfirm={() => deleteTarget && deleteTask.mutate(deleteTarget.id)}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </Stack>
   );
 }

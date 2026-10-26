@@ -93,6 +93,42 @@ public class InventoryController : ControllerBase
         return Ok(item);
     }
 
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateItem(int farmId, int id, [FromBody] CreateInventoryItemRequest request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var item = await _db.InventoryItems.FirstOrDefaultAsync(i => i.FarmId == farmId && i.Id == id);
+        if (item == null) return NotFound();
+
+        item.Name = request.Name;
+        item.Category = request.Category;
+        item.Unit = request.Unit;
+        item.MinimumStock = request.MinimumStock;
+        item.UnitCost = request.UnitCost;
+        item.ExpiryDate = request.ExpiryDate;
+        item.SupplierId = request.SupplierId;
+        item.Description = request.Description;
+        item.UpdatedBy = UserId;
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteItem(int farmId, int id)
+    {
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var item = await _db.InventoryItems.FirstOrDefaultAsync(i => i.FarmId == farmId && i.Id == id);
+        if (item == null) return NotFound();
+
+        item.IsActive = false;
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpPost("{id:int}/movements")]
     public async Task<IActionResult> AddMovement(int farmId, int id, [FromBody] AddStockMovementRequest request)
     {

@@ -51,6 +51,40 @@ public class FinanceController : ControllerBase
         return Ok(customer);
     }
 
+    [HttpPut("customers/{id:int}")]
+    public async Task<IActionResult> UpdateCustomer(int farmId, int id, [FromBody] CreateCustomerRequest request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var customer = await _db.Customers.FirstOrDefaultAsync(c => c.FarmId == farmId && c.Id == id);
+        if (customer == null) return NotFound();
+
+        customer.Name = request.Name;
+        customer.ContactPerson = request.ContactPerson;
+        customer.Phone = request.Phone;
+        customer.Email = request.Email;
+        customer.Address = request.Address;
+        customer.Notes = request.Notes;
+        customer.UpdatedBy = UserId;
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpDelete("customers/{id:int}")]
+    public async Task<IActionResult> DeleteCustomer(int farmId, int id)
+    {
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var customer = await _db.Customers.FirstOrDefaultAsync(c => c.FarmId == farmId && c.Id == id);
+        if (customer == null) return NotFound();
+
+        customer.IsActive = false; // soft delete to preserve order histories
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     // ---- Suppliers ----
     [HttpGet("suppliers")]
     public async Task<IActionResult> GetSuppliers(int farmId)
@@ -74,6 +108,40 @@ public class FinanceController : ControllerBase
         _db.Suppliers.Add(supplier);
         await _db.SaveChangesAsync();
         return Ok(supplier);
+    }
+
+    [HttpPut("suppliers/{id:int}")]
+    public async Task<IActionResult> UpdateSupplier(int farmId, int id, [FromBody] CreateSupplierRequest request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var supplier = await _db.Suppliers.FirstOrDefaultAsync(s => s.FarmId == farmId && s.Id == id);
+        if (supplier == null) return NotFound();
+
+        supplier.Name = request.Name;
+        supplier.ContactPerson = request.ContactPerson;
+        supplier.Phone = request.Phone;
+        supplier.Email = request.Email;
+        supplier.Address = request.Address;
+        supplier.Notes = request.Notes;
+        supplier.UpdatedBy = UserId;
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpDelete("suppliers/{id:int}")]
+    public async Task<IActionResult> DeleteSupplier(int farmId, int id)
+    {
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var supplier = await _db.Suppliers.FirstOrDefaultAsync(s => s.FarmId == farmId && s.Id == id);
+        if (supplier == null) return NotFound();
+
+        supplier.IsActive = false; // soft delete
+        await _db.SaveChangesAsync();
+        return NoContent();
     }
 
     // ---- Sales Orders ----
@@ -262,6 +330,40 @@ public class FinanceController : ControllerBase
         _db.Expenses.Add(expense);
         await _db.SaveChangesAsync();
         return Ok(expense);
+    }
+
+    [HttpPut("expenses/{id:int}")]
+    public async Task<IActionResult> UpdateExpense(int farmId, int id, [FromBody] CreateExpenseRequest request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var expense = await _db.Expenses.FirstOrDefaultAsync(e => e.FarmId == farmId && e.Id == id);
+        if (expense == null) return NotFound();
+
+        expense.Category = request.Category;
+        expense.Amount = request.Amount;
+        expense.ExpenseDate = request.ExpenseDate;
+        expense.Description = request.Description;
+        expense.SupplierId = request.SupplierId;
+        expense.Reference = request.Reference;
+        expense.UpdatedBy = UserId;
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpDelete("expenses/{id:int}")]
+    public async Task<IActionResult> DeleteExpense(int farmId, int id)
+    {
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var expense = await _db.Expenses.FirstOrDefaultAsync(e => e.FarmId == farmId && e.Id == id);
+        if (expense == null) return NotFound();
+
+        _db.Expenses.Remove(expense);
+        await _db.SaveChangesAsync();
+        return NoContent();
     }
 
     // ---- Finance Summary ----

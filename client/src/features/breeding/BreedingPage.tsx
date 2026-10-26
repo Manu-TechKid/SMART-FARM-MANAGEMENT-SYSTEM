@@ -1,15 +1,15 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Stack, Table,
-  TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography,
+  Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle,
+  IconButton, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
+import { EditOutlined, DeleteOutline } from '@mui/icons-material';
 import { api, errorMessage } from '../../api/client';
 import { useAuth } from '../auth/AuthContext';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import type { Animal, PagedResult } from '../../types';
-
-const STATUSES = ['Mated', 'Pregnant', 'BirthConfirmed', 'Failed', 'Cancelled'];
-const today = () => new Date().toISOString().slice(0, 10);
 
 interface BreedingRow {
   id: number;
@@ -25,21 +25,24 @@ interface BreedingRow {
   notes?: string;
 }
 
+const STATUSES = ['Mated', 'Pregnant', 'BirthConfirmed', 'Failed'];
+const today = () => new Date().toISOString().slice(0, 10);
+
 export default function BreedingPage() {
   const { farmId } = useAuth();
   const qc = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState('');
   const [open, setOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<BreedingRow | null>(null);
   const [err, setErr] = useState('');
-  const [form, setForm] = useState({ sireId: '', damId: '', matingDate: today(), expectedDOB: '', notes: '' });
-  const [editForm, setEditForm] = useState({ status: 'Pregnant', actualDOB: '', offspringCount: '', notes: '' });
+  const [form, setForm] = useState({ damId: '', sireId: '', matingDate: today(), notes: '' });
+
+  const [editTarget, setEditTarget] = useState<BreedingRow | null>(null);
+  const [editForm, setEditForm] = useState({ status: 'Pregnant', actualDOB: '', offspringCount: '1', notes: '' });
+  const [deleteTarget, setDeleteTarget] = useState<BreedingRow | null>(null);
 
   const { data: records, isLoading } = useQuery({
-    queryKey: ['breeding', farmId, statusFilter],
+    queryKey: ['breeding', farmId],
     enabled: !!farmId,
-    queryFn: async () =>
-      (await api.get<BreedingRow[]>(`/farms/${farmId}/breeding`, { params: { status: statusFilter || undefined } })).data,
+    queryFn: async () => (await api.get<BreedingRow[]>(`/farms/${farmId}/breeding`)).data,
   });
 
   const { data: animals } = useQuery({
@@ -48,16 +51,23 @@ export default function BreedingPage() {
     queryFn: async () => (await api.get<PagedResult<Animal>>(`/farms/${farmId}/animals`, { params: { pageSize: 100 } })).data.items,
   });
 
+  const females = animals?.filter((a) => a.sex === 'Female') ?? [];
+  const males = animals?.filter((a) => a.sex === 'Male') ?? [];
+
   const create = useMutation({
     mutationFn: () =>
       api.post(`/farms/${farmId}/breeding`, {
-        sireId: form.sireId ? Number(form.sireId) : null,
         damId: Number(form.damId),
+        sireId: form.sireId ? Number(form.sireId) : null,
         matingDate: form.matingDate,
-        expectedDOB: form.expectedDOB || null,
         notes: form.notes || null,
       }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['breeding'] }); setOpen(false); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['breeding'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      setOpen(false);
+      setForm({ damId: '', sireId: '', matingDate: today(), notes: '' });
+    },
     onError: (e) => setErr(errorMessage(e)),
   });
 
@@ -69,26 +79,39 @@ export default function BreedingPage() {
         offspringCount: editForm.offspringCount ? Number(editForm.offspringCount) : null,
         notes: editForm.notes || null,
       }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['breeding'] }); setEditTarget(null); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['breeding'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      setEditTarget(null);
+    },
     onError: (e) => setErr(errorMessage(e)),
   });
 
-  const females = (animals ?? []).filter((a) => a.sex === 'Female' && a.status === 'Active');
-  const males = (animals ?? []).filter((a) => a.sex === 'Male' && a.status === 'Active');
-
-  if (!farmId) return <Alert severity="info">Select or create a farm in Farm Settings first.</Alert>;
+  const deleteBreeding = useMutation({
+    mutationFn: () => api.delete(`/farms/${farmId}/breeding/${deleteTarget!.id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['breeding'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      setDeleteTarget(null);
+    },
+    onError: (e) => setErr(errorMessage(e)),
+  });
 
   return (
-    <Stack spacing={2}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
-        <Typography variant="h5" fontWeight={700}>Breeding & Reproduction</Typography>
-        <Button variant="contained" onClick={() => { setErr(''); setOpen(true); }}>Record mating</Button>
+    <Stack spacing={3}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} spacing={2}>
+        <Box>
+          <Typography variant="h5" fontWeight={700}>Breeding & Calving Pipeline</Typography>
+          <Typography variant="body2" color="text.secondary">
+            AI & natural service mating logs, estimated gestation dates, and birth records for lineage tracking.
+          </Typography>
+        </Box>
+        <Button variant="contained" color="success" onClick={() => { setErr(''); setOpen(true); }} sx={{ fontWeight: 700 }}>
+          + Record Service / Mating
+        </Button>
       </Stack>
 
-      <TextField select size="small" label="Filter status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ width: 200 }}>
-        <MenuItem value="">All</MenuItem>
-        {STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
-      </TextField>
+      {err && <Alert severity="error" onClose={() => setErr('')}>{err}</Alert>}
 
       <Paper>
         <TableContainer>
@@ -116,15 +139,26 @@ export default function BreedingPage() {
                   </TableCell>
                   <TableCell>{r.notes ?? '—'}</TableCell>
                   <TableCell align="right">
-                    <Button size="small" onClick={() => {
-                      setEditTarget(r);
-                      setEditForm({
-                        status: r.status === 'Mated' ? 'Pregnant' : 'BirthConfirmed',
-                        actualDOB: r.actualDOB ? r.actualDOB.slice(0, 10) : today(),
-                        offspringCount: r.offspringCount ? String(r.offspringCount) : '1',
-                        notes: r.notes ?? '',
-                      });
-                    }}>Update</Button>
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end" alignItems="center">
+                      <Tooltip title="Update Breeding Record">
+                        <IconButton size="small" color="primary" onClick={() => {
+                          setEditTarget(r);
+                          setEditForm({
+                            status: r.status === 'Mated' ? 'Pregnant' : 'BirthConfirmed',
+                            actualDOB: r.actualDOB ? r.actualDOB.slice(0, 10) : today(),
+                            offspringCount: r.offspringCount ? String(r.offspringCount) : '1',
+                            notes: r.notes ?? '',
+                          });
+                        }}>
+                          <EditOutlined fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete Breeding Record">
+                        <IconButton size="small" color="error" onClick={() => setDeleteTarget(r)}>
+                          <DeleteOutline fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
                   </TableCell>
                 </TableRow>
               ))}
@@ -133,48 +167,68 @@ export default function BreedingPage() {
         </TableContainer>
       </Paper>
 
+      {/* Record Service Dialog */}
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="xs">
         <Box component="form" onSubmit={(e: FormEvent) => {
           e.preventDefault();
           if (!form.damId) { setErr('Select a female dam.'); return; }
           create.mutate();
-        }} noValidate>
-          <DialogTitle>Record Mating / Breeding</DialogTitle>
+        }}>
+          <DialogTitle fontWeight={700}>Record Mating / Service</DialogTitle>
           <DialogContent sx={{ display: 'grid', gap: 2, pt: 1 }}>
-            {err && <Alert severity="error">{err}</Alert>}
             <TextField select label="Dam (Female)" required value={form.damId} onChange={(e) => setForm({ ...form, damId: e.target.value })} sx={{ mt: 1 }}>
-              {females.map((a) => <MenuItem key={a.id} value={String(a.id)}>{a.tagId} — {a.name ?? a.species}</MenuItem>)}
+              {females.map((f) => <MenuItem key={f.id} value={f.id}>{f.tagId} ({f.species}{f.breed ? ` - ${f.breed}` : ''})</MenuItem>)}
             </TextField>
-            <TextField select label="Sire (Male — optional if AI)" value={form.sireId} onChange={(e) => setForm({ ...form, sireId: e.target.value })}>
-              <MenuItem value="">Artificial Insemination / External</MenuItem>
-              {males.map((a) => <MenuItem key={a.id} value={String(a.id)}>{a.tagId} — {a.name ?? a.species}</MenuItem>)}
+            <TextField select label="Sire (Male / Bull / Ram / Buck)" value={form.sireId} onChange={(e) => setForm({ ...form, sireId: e.target.value })}>
+              <MenuItem value="">AI / External Semen</MenuItem>
+              {males.map((m) => <MenuItem key={m.id} value={m.id}>{m.tagId} ({m.species}{m.breed ? ` - ${m.breed}` : ''})</MenuItem>)}
             </TextField>
-            <TextField label="Mating date" type="date" value={form.matingDate} onChange={(e) => setForm({ ...form, matingDate: e.target.value })} InputLabelProps={{ shrink: true }} />
-            <TextField label="Expected birth (blank = auto-calculated by species)" type="date" value={form.expectedDOB} onChange={(e) => setForm({ ...form, expectedDOB: e.target.value })} InputLabelProps={{ shrink: true }} />
-            <TextField label="Notes" multiline minRows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+            <TextField label="Service / Mating Date" type="date" InputLabelProps={{ shrink: true }} value={form.matingDate} onChange={(e) => setForm({ ...form, matingDate: e.target.value })} />
+            <TextField label="Notes / Semen Batch" multiline rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </DialogContent>
-          <DialogActions><Button onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" variant="contained">Save</Button></DialogActions>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" color="success">Save Service</Button>
+          </DialogActions>
         </Box>
       </Dialog>
 
+      {/* Update Breeding Dialog */}
       <Dialog open={!!editTarget} onClose={() => setEditTarget(null)} fullWidth maxWidth="xs">
-        <Box component="form" onSubmit={(e: FormEvent) => { e.preventDefault(); update.mutate(); }} noValidate>
-          <DialogTitle>Update Breeding — {editTarget?.damTag}</DialogTitle>
+        <Box component="form" onSubmit={(e: FormEvent) => {
+          e.preventDefault();
+          update.mutate();
+        }}>
+          <DialogTitle fontWeight={700}>Update Status — Dam {editTarget?.damTag}</DialogTitle>
           <DialogContent sx={{ display: 'grid', gap: 2, pt: 1 }}>
-            <TextField select label="Status" value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} sx={{ mt: 1 }}>
+            <TextField select label="Breeding Status" value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} sx={{ mt: 1 }}>
               {STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
             </TextField>
             {editForm.status === 'BirthConfirmed' && (
               <>
-                <TextField label="Actual birth date" type="date" value={editForm.actualDOB} onChange={(e) => setEditForm({ ...editForm, actualDOB: e.target.value })} InputLabelProps={{ shrink: true }} />
-                <TextField label="Offspring count" type="number" value={editForm.offspringCount} onChange={(e) => setEditForm({ ...editForm, offspringCount: e.target.value })} />
+                <TextField label="Actual Birth Date" type="date" InputLabelProps={{ shrink: true }} value={editForm.actualDOB} onChange={(e) => setEditForm({ ...editForm, actualDOB: e.target.value })} />
+                <TextField label="Offspring Count" type="number" value={editForm.offspringCount} onChange={(e) => setEditForm({ ...editForm, offspringCount: e.target.value })} />
               </>
             )}
-            <TextField label="Notes" multiline minRows={2} value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} />
+            <TextField label="Notes / Newborn Health" multiline rows={2} value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} />
           </DialogContent>
-          <DialogActions><Button onClick={() => setEditTarget(null)}>Cancel</Button><Button type="submit" variant="contained">Save</Button></DialogActions>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setEditTarget(null)}>Cancel</Button>
+            <Button type="submit" variant="contained" color="success">Update Status</Button>
+          </DialogActions>
         </Box>
       </Dialog>
+
+      {/* Delete Breeding Confirm Dialog */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Breeding Record?"
+        message={`Are you sure you want to delete the breeding record for Dam ${deleteTarget?.damTag}?`}
+        confirmLabel="Delete"
+        busy={deleteBreeding.isPending}
+        onConfirm={() => deleteBreeding.mutate()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </Stack>
   );
 }

@@ -107,6 +107,24 @@ public class BeehivesController : ControllerBase
         return NoContent();
     }
 
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteHive(int farmId, int id)
+    {
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+        var hive = await _db.Beehives
+            .Include(b => b.Inspections)
+            .FirstOrDefaultAsync(b => b.FarmId == farmId && b.Id == id);
+        if (hive == null) return NotFound();
+
+        var prodRecords = await _db.ProductionRecords.Where(p => p.BeehiveId == id).ToListAsync();
+        foreach (var p in prodRecords) p.BeehiveId = null;
+
+        _db.HiveInspections.RemoveRange(hive.Inspections);
+        _db.Beehives.Remove(hive);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpGet("{id:int}/inspections")]
     public async Task<IActionResult> GetInspections(int farmId, int id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {

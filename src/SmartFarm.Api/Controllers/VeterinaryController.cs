@@ -53,6 +53,18 @@ public class VeterinaryController : ControllerBase
         return CreatedAtAction(nameof(GetSchedules), new { farmId }, schedule);
     }
 
+    [HttpDelete("vaccination/schedules/{id:int}")]
+    public async Task<IActionResult> DeleteSchedule(int farmId, int id)
+    {
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+        var schedule = await _db.VaccinationSchedules.FirstOrDefaultAsync(s => s.FarmId == farmId && s.Id == id);
+        if (schedule == null) return NotFound();
+
+        _db.VaccinationSchedules.Remove(schedule);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     // ===== Vaccination Records =====
     [HttpGet("vaccination/records")]
     public async Task<IActionResult> GetVaccinationRecords(int farmId,
@@ -133,6 +145,18 @@ public class VeterinaryController : ControllerBase
         return NoContent();
     }
 
+    [HttpDelete("vaccination/records/{id:int}")]
+    public async Task<IActionResult> DeleteVaccinationRecord(int farmId, int id)
+    {
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+        var record = await _db.VaccinationRecords.FirstOrDefaultAsync(v => v.FarmId == farmId && v.Id == id);
+        if (record == null) return NotFound();
+
+        _db.VaccinationRecords.Remove(record);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     // ===== Health Records =====
     [HttpGet("health-records")]
     public async Task<IActionResult> GetHealthRecords(int farmId,
@@ -179,5 +203,43 @@ public class VeterinaryController : ControllerBase
         _db.HealthRecords.Add(record);
         await _db.SaveChangesAsync();
         return Ok(record);
+    }
+
+    [HttpPut("health-records/{id:int}")]
+    public async Task<IActionResult> UpdateHealthRecord(int farmId, int id, [FromBody] CreateHealthRecordRequest request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var record = await _db.HealthRecords.FirstOrDefaultAsync(h => h.FarmId == farmId && h.Id == id);
+        if (record == null) return NotFound();
+
+        record.RecordDate = request.RecordDate;
+        record.RecordType = request.RecordType;
+        record.Symptoms = request.Symptoms;
+        record.Diagnosis = request.Diagnosis;
+        record.Treatment = request.Treatment;
+        record.VeterinarianName = request.VeterinarianName;
+        record.VeterinaryCost = request.VeterinaryCost;
+        record.WithdrawalPeriodEnd = request.WithdrawalPeriodEnd;
+        record.FollowUpDate = request.FollowUpDate;
+        record.Notes = request.Notes;
+        record.UpdatedBy = UserId;
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpDelete("health-records/{id:int}")]
+    public async Task<IActionResult> DeleteHealthRecord(int farmId, int id)
+    {
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var record = await _db.HealthRecords.FirstOrDefaultAsync(h => h.FarmId == farmId && h.Id == id);
+        if (record == null) return NotFound();
+
+        _db.HealthRecords.Remove(record);
+        await _db.SaveChangesAsync();
+        return NoContent();
     }
 }

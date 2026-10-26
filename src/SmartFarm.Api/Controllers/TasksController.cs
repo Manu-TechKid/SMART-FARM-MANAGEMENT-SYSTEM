@@ -80,6 +80,40 @@ public class TasksController : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("tasks/{id:int}")]
+    public async Task<IActionResult> UpdateTask(int farmId, int id, [FromBody] CreateTaskRequest request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var task = await _db.FarmTasks.FirstOrDefaultAsync(t => t.FarmId == farmId && t.Id == id);
+        if (task == null) return NotFound();
+
+        task.Title = request.Title;
+        task.Description = request.Description;
+        task.Category = request.Category;
+        task.Priority = request.Priority ?? task.Priority;
+        task.DueDate = request.DueDate;
+        task.AssignedToUserId = request.AssignedToUserId;
+        task.UpdatedBy = UserId;
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpDelete("tasks/{id:int}")]
+    public async Task<IActionResult> DeleteTask(int farmId, int id)
+    {
+        if (!await _farmService.UserHasFarmAccessAsync(farmId, UserId)) return Forbid();
+
+        var task = await _db.FarmTasks.FirstOrDefaultAsync(t => t.FarmId == farmId && t.Id == id);
+        if (task == null) return NotFound();
+
+        _db.FarmTasks.Remove(task);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpGet("notifications")]
     public async Task<IActionResult> GetNotifications(int farmId, [FromQuery] bool? unread)
     {
