@@ -37,8 +37,13 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
-        await _auth.ForgotPasswordAsync(request.Email);
-        return Ok(new { message = "If the email is registered, a reset link has been sent." });
+        var (success, error, resetLink, token) = await _auth.ForgotPasswordAsync(request.Email);
+        return Ok(new
+        {
+            message = "If the email is registered, password reset instructions have been dispatched.",
+            resetLink,
+            token
+        });
     }
 
     [HttpPost("reset-password")]

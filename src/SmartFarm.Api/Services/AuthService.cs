@@ -11,7 +11,7 @@ public interface IAuthService
     Task<(bool Success, string? Error, AuthResponse? Response)> RegisterAsync(RegisterRequest request);
     Task<(bool Success, string? Error, AuthResponse? Response)> LoginAsync(LoginRequest request);
     Task<(bool Success, string? Error, AuthResponse? Response)> RefreshTokenAsync(string refreshToken);
-    Task<bool> ForgotPasswordAsync(string email);
+    Task<(bool Success, string? Error, string? ResetLink, string? Token)> ForgotPasswordAsync(string email);
     Task<(bool Success, string? Error)> ResetPasswordAsync(ResetPasswordRequest request);
 }
 
@@ -95,13 +95,13 @@ public class AuthService : IAuthService
         return Task.FromResult<(bool, string?, AuthResponse?)>((false, "Use login to get a new token.", null));
     }
 
-    public async Task<bool> ForgotPasswordAsync(string email)
+    public async Task<(bool Success, string? Error, string? ResetLink, string? Token)> ForgotPasswordAsync(string email)
     {
         var user = await _userManager.FindByEmailAsync(email);
         if (user == null)
         {
             _logger.LogInformation("Password reset requested for non-existent email: {Email}", email);
-            return true; // don't reveal existence to avoid enumeration
+            return (true, null, null, null); // don't reveal existence to avoid enumeration
         }
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -173,7 +173,7 @@ public class AuthService : IAuthService
             _logger.LogWarning("Email delivery failed for password reset token for {Email}", email);
         }
 
-        return true;
+        return (true, null, resetLink, token);
     }
 
     public async Task<(bool Success, string? Error)> ResetPasswordAsync(ResetPasswordRequest request)

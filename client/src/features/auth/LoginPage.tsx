@@ -197,7 +197,10 @@ export default function LoginPage() {
     setResetMsg(null);
     setBusy(true);
     try {
-      await api.post('/auth/forgot-password', { email: forgotEmail.trim() });
+      const res = await api.post<{ message: string; resetLink?: string; token?: string }>('/auth/forgot-password', { email: forgotEmail.trim() });
+      if (res.data?.token) {
+        setResetToken(res.data.token);
+      }
       setForgotSent(true);
     } catch (err) {
       setResetMsg({ severity: 'error', text: errorMessage(err) });
@@ -696,16 +699,25 @@ export default function LoginPage() {
                 {forgotSent ? (
                   <>
                     <Alert severity="success">
-                      If an account exists for <strong>{forgotEmail}</strong>, password reset instructions have been dispatched via Resend. Check your inbox and spam folder!
+                      Password reset initiated for <strong>{forgotEmail}</strong>.
+                      <Typography variant="body2" sx={{ mt: 1, fontSize: '0.85rem' }}>
+                        <strong>Resend Notice:</strong> If using Resend free tier, testing emails are routed to your verified Resend account (<strong>techkid250@gmail.com</strong>).
+                      </Typography>
                     </Alert>
+                    {resetToken && (
+                      <Alert severity="info" sx={{ mt: 1 }}>
+                        Reset token detected! Click below to set your new password directly without waiting for email delivery.
+                      </Alert>
+                    )}
                     <Button
-                      variant="outlined"
+                      variant="contained"
                       color="success"
-                      size="small"
+                      size="medium"
+                      fullWidth
                       onClick={() => setShowResetForm(true)}
-                      sx={{ textTransform: 'none', fontWeight: 700 }}
+                      sx={{ textTransform: 'none', fontWeight: 800, py: 1.2, mt: 1 }}
                     >
-                      Enter Token & Set New Password &rarr;
+                      {resetToken ? 'Set New Password Now →' : 'Enter Token & Set New Password →'}
                     </Button>
                   </>
                 ) : (
