@@ -1,7 +1,5 @@
 using System.Security.Claims;
-using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Caching.Memory;
 using SmartFarm.Api.Data;
 using SmartFarm.Api.DTOs;
 using SmartFarm.Api.Models;
@@ -13,9 +11,8 @@ public interface IAuthService
     Task<(bool Success, string? Error, AuthResponse? Response)> RegisterAsync(RegisterRequest request);
     Task<(bool Success, string? Error, AuthResponse? Response)> LoginAsync(LoginRequest request);
     Task<(bool Success, string? Error, AuthResponse? Response)> RefreshTokenAsync(string refreshToken);
-    Task<(bool Success, string? Error, string? ResetLink, string? Token, string? Otp)> ForgotPasswordAsync(string email);
+    Task<(bool Success, string? Error)> ForgotPasswordAsync(string email);
     Task<(bool Success, string? Error)> ResetPasswordAsync(ResetPasswordRequest request);
-    Task<(bool Success, string? Error)> ResetPasswordWithOtpAsync(ResetPasswordWithOtpRequest request);
     Task<(bool Success, string? Error)> ChangePasswordAsync(string userId, ChangePasswordRequest request);
 }
 
@@ -27,7 +24,6 @@ public class AuthService : IAuthService
     private readonly JwtSettings _jwtSettings;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _config;
-    private readonly IMemoryCache _cache;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
@@ -37,7 +33,6 @@ public class AuthService : IAuthService
         JwtSettings jwtSettings,
         IEmailService emailService,
         IConfiguration config,
-        IMemoryCache cache,
         ILogger<AuthService> logger)
     {
         _userManager = userManager;
@@ -46,7 +41,6 @@ public class AuthService : IAuthService
         _jwtSettings = jwtSettings;
         _emailService = emailService;
         _config = config;
-        _cache = cache;
         _logger = logger;
     }
 
@@ -80,7 +74,7 @@ public class AuthService : IAuthService
             accessToken,
             refreshToken,
             user.Id,
-            user.Email,
+            user.Email ?? string.Empty,
             user.FirstName,
             user.LastName,
             roles
@@ -105,7 +99,7 @@ public class AuthService : IAuthService
             accessToken,
             refreshToken,
             user.Id,
-            user.Email,
+            user.Email ?? string.Empty,
             user.FirstName,
             user.LastName,
             roles
@@ -117,24 +111,16 @@ public class AuthService : IAuthService
         return Task.FromResult<(bool, string?, AuthResponse?)>((false, "Use login to get a new token.", null));
     }
 
-    public async Task<(bool Success, string? Error, string? ResetLink, string? Token, string? Otp)> ForgotPasswordAsync(string email)
+    public async Task<(bool Success, string? Error)> ForgotPasswordAsync(string email)
     {
         var user = await _userManager.FindByEmailAsync(email);
         if (user == null)
         {
             _logger.LogInformation("Password reset requested for non-existent email: {Email}", email);
-            return (true, null, null, null, null); // don't reveal existence to avoid enumeration
+            return (true, null); // don't reveal user existence
         }
 
-        // Generate 6-digit OTP
-        var otp = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
-        var emailKey = email.Trim().ToLowerInvariant();
-        _cache.Set($"reset_otp_{emailKey}", otp, TimeSpan.FromMinutes(15));
-
-        // Generate standard Identity password reset token & cache it alongside OTP
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        _cache.Set($"reset_token_{emailKey}", token, TimeSpan.FromMinutes(15));
-
         var baseUrl = _config["Resend:AppBaseUrl"]?.TrimEnd('/')
             ?? Environment.GetEnvironmentVariable("Resend__AppBaseUrl")
             ?? "https://bett-smartfarm.duckdns.org";
@@ -159,12 +145,9 @@ public class AuthService : IAuthService
     .body {{ padding: 36px 32px; }}
     .greeting {{ font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 14px; }}
     p {{ font-size: 15px; line-height: 1.6; color: #4b5563; margin: 0 0 18px; }}
-    .otp-box {{ background: #f0fdf4; border: 2px dashed #22c55e; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0; }}
-    .otp-label {{ font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: #15803d; }}
-    .otp-code {{ font-size: 38px; font-weight: 900; letter-spacing: 8px; color: #166534; font-family: ui-monospace, Menlo, Consolas, monospace; margin: 10px 0; }}
-    .otp-sub {{ font-size: 12px; color: #16a34a; font-weight: 600; }}
-    .btn-container {{ text-align: center; margin: 28px 0; }}
-    .btn {{ display: inline-block; background-color: #2e7d32; color: #ffffff !important; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 34px; border-radius: 10px; box-shadow: 0 4px 14px rgba(46,125,50,0.35); }}
+    .btn-container {{ text-align: center; margin: 32px 0; }}
+    .btn {{ display: inline-block; background-color: #2e7d32; color: #ffffff !important; font-size: 16px; font-weight: 700; text-decoration: none; padding: 15px 36px; border-radius: 10px; box-shadow: 0 4px 14px rgba(46,125,50,0.35); }}
+    .link-box {{ background-color: #f8faf9; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px; word-break: break-all; font-size: 13px; color: #2e7d32; margin: 20px 0; }}
     .footer {{ background-color: #f9fafb; padding: 22px 32px; border-top: 1px solid #f3f4f6; text-align: center; font-size: 12px; color: #9ca3af; }}
   </style>
 </head>
@@ -172,23 +155,24 @@ public class AuthService : IAuthService
   <div class='container'>
     <div class='header'>
       <div class='brand'>🌾 SMART FARM</div>
-      <div class='tagline'>Unified Farm & Livestock Management System</div>
+      <div class='tagline'>Unified Farm &amp; Livestock Management System</div>
     </div>
     <div class='body'>
       <div class='greeting'>Hello {recipientName},</div>
       <p>We received a request to reset your password for your Smart Farm account (<strong>{email}</strong>).</p>
 
-      <div class='otp-box'>
-        <div class='otp-label'>Your 6-Digit Password Reset OTP</div>
-        <div class='otp-code'>{otp}</div>
-        <div class='otp-sub'>Expires in 15 minutes &bull; Enter this on the password reset screen</div>
-      </div>
+      <p>Click the button below to set a new password for your account:</p>
 
       <div class='btn-container'>
-        <a href='{resetLink}' class='btn' target='_blank'>Or Click Here to Reset Instantly</a>
+        <a href='{resetLink}' class='btn' target='_blank'>Reset My Password</a>
+      </div>
+
+      <p style='font-size: 13px; color: #6b7280; margin-top: 24px;'>If the button above does not work, copy and paste this link into your web browser:</p>
+      <div class='link-box'>
+        <a href='{resetLink}' style='color: #2e7d32; text-decoration: underline;'>{resetLink}</a>
       </div>
       
-      <p style='font-size: 13px; color: #9ca3af; margin-top: 24px;'>If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+      <p style='font-size: 13px; color: #9ca3af; margin-top: 24px;'>This link will expire in 24 hours. If you did not request a password reset, you can safely ignore this email.</p>
     </div>
     <div class='footer'>
       &copy; {DateTime.UtcNow.Year} Smart Farm Management System &bull; Secure AgriTech Infrastructure
@@ -197,45 +181,12 @@ public class AuthService : IAuthService
 </body>
 </html>";
 
-        var sent = await _emailService.SendEmailAsync(email, $"Your SmartFarm Password Reset Code: {otp}", html);
+        var sent = await _emailService.SendEmailAsync(email, "Reset Your Smart Farm Password", html);
         if (!sent)
         {
-            _logger.LogWarning("Email delivery failed for password reset token for {Email}", email);
+            _logger.LogWarning("Email delivery failed for password reset link for {Email}", email);
         }
 
-        return (true, null, resetLink, token, otp);
-    }
-
-    public async Task<(bool Success, string? Error)> ResetPasswordWithOtpAsync(ResetPasswordWithOtpRequest request)
-    {
-        var emailKey = request.Email.Trim().ToLowerInvariant();
-        if (!_cache.TryGetValue($"reset_otp_{emailKey}", out string? cachedOtp) || cachedOtp != request.Otp.Trim())
-        {
-            return (false, "Invalid or expired 6-digit OTP code. Please request a new code.");
-        }
-
-        var user = await _userManager.FindByEmailAsync(request.Email.Trim());
-        if (user == null)
-        {
-            return (false, "User account not found.");
-        }
-
-        // Get cached Identity token or generate fresh
-        if (!_cache.TryGetValue($"reset_token_{emailKey}", out string? token) || string.IsNullOrWhiteSpace(token))
-        {
-            token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        }
-
-        var result = await _userManager.ResetPasswordAsync(user, token, request.NewPassword);
-        if (!result.Succeeded)
-        {
-            return (false, string.Join("; ", result.Errors.Select(e => e.Description)));
-        }
-
-        _cache.Remove($"reset_otp_{emailKey}");
-        _cache.Remove($"reset_token_{emailKey}");
-
-        _logger.LogInformation("Password reset successfully via OTP for user: {Email}", request.Email);
         return (true, null);
     }
 

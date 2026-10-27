@@ -113,7 +113,6 @@ export default function LoginPage() {
   const [forgotSent, setForgotSent] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
   const [resetToken, setResetToken] = useState('');
-  const [resetOtp, setResetOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetting, setResetting] = useState(false);
@@ -198,15 +197,8 @@ export default function LoginPage() {
     setResetMsg(null);
     setBusy(true);
     try {
-      const res = await api.post<{ message: string; resetLink?: string; token?: string; otp?: string }>('/auth/forgot-password', { email: forgotEmail.trim() });
-      if (res.data?.token) {
-        setResetToken(res.data.token);
-      }
-      if (res.data?.otp) {
-        setResetOtp(res.data.otp);
-      }
+      await api.post('/auth/forgot-password', { email: forgotEmail.trim() });
       setForgotSent(true);
-      setShowResetForm(true);
     } catch (err) {
       setResetMsg({ severity: 'error', text: errorMessage(err) });
     } finally {
@@ -216,11 +208,8 @@ export default function LoginPage() {
 
   const handleResetSubmit = async () => {
     setResetMsg(null);
-    const hasOtp = resetOtp.trim().length === 6;
-    const hasToken = resetToken.trim().length > 0;
-
-    if (!forgotEmail.trim() || (!hasOtp && !hasToken) || !newPassword) {
-      setResetMsg({ severity: 'error', text: 'Please provide your email, 6-digit OTP code (or token), and new password.' });
+    if (!forgotEmail.trim() || !resetToken.trim() || !newPassword) {
+      setResetMsg({ severity: 'error', text: 'Please provide email, valid reset token from your email link, and new password.' });
       return;
     }
     if (newPassword.length < 8) {
@@ -234,19 +223,11 @@ export default function LoginPage() {
 
     setResetting(true);
     try {
-      if (hasOtp) {
-        await api.post('/auth/reset-password-otp', {
-          email: forgotEmail.trim(),
-          otp: resetOtp.trim(),
-          newPassword,
-        });
-      } else {
-        await api.post('/auth/reset-password', {
-          email: forgotEmail.trim(),
-          token: resetToken.trim(),
-          newPassword,
-        });
-      }
+      await api.post('/auth/reset-password', {
+        email: forgotEmail.trim(),
+        token: resetToken.trim(),
+        newPassword,
+      });
       setResetMsg({
         severity: 'success',
         text: 'Password updated successfully! Logging you in...',
@@ -258,7 +239,6 @@ export default function LoginPage() {
         setForgotOpen(false);
         setShowResetForm(false);
         setResetToken('');
-        setResetOtp('');
         setNewPassword('');
         setConfirmPassword('');
       }, 1500);
@@ -659,30 +639,15 @@ export default function LoginPage() {
             {showResetForm ? (
               <>
                 <Typography variant="body2" color="text.secondary">
-                  Enter your email, the 6-digit verification code (OTP), and choose your new password.
+                  Choose a new password for your account (<strong>{forgotEmail}</strong>).
                 </Typography>
                 <TextField
                   label="Registered Email"
                   type="email"
                   size="small"
                   value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
+                  disabled
                   fullWidth
-                  required
-                />
-                <TextField
-                  label="6-Digit Reset Code (OTP)"
-                  size="small"
-                  value={resetOtp}
-                  onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="e.g. 123456"
-                  fullWidth
-                  required
-                  inputProps={{
-                    maxLength: 6,
-                    style: { letterSpacing: 4, fontWeight: 800, fontSize: '1.15rem', textAlign: 'center' },
-                  }}
-                  helperText="Enter the 6-digit code sent to your email (or pre-filled code)"
                 />
                 <TextField
                   label="New Password"
@@ -693,6 +658,7 @@ export default function LoginPage() {
                   placeholder="At least 8 characters"
                   fullWidth
                   required
+                  autoFocus
                 />
                 <TextField
                   label="Confirm New Password"
@@ -703,49 +669,20 @@ export default function LoginPage() {
                   fullWidth
                   required
                 />
-                <Link
-                  component="button"
-                  type="button"
-                  variant="caption"
-                  onClick={() => {
-                    setShowResetForm(false);
-                    setResetMsg(null);
-                  }}
-                  sx={{ textAlign: 'left', color: '#2e7d32', fontWeight: 600 }}
-                >
-                  &larr; Request a new code instead
-                </Link>
               </>
             ) : (
               <>
                 {forgotSent ? (
-                  <>
-                    <Alert severity="success">
-                      Password reset initiated for <strong>{forgotEmail}</strong>.
-                      <Typography variant="body2" sx={{ mt: 1, fontSize: '0.85rem' }}>
-                        <strong>Resend Notice:</strong> If using Resend free tier, testing emails are routed to your verified Resend account (<strong>techkid250@gmail.com</strong>).
-                      </Typography>
-                    </Alert>
-                    {resetToken && (
-                      <Alert severity="info" sx={{ mt: 1 }}>
-                        Reset token detected! Click below to set your new password directly without waiting for email delivery.
-                      </Alert>
-                    )}
-                    <Button
-                      variant="contained"
-                      color="success"
-                      size="medium"
-                      fullWidth
-                      onClick={() => setShowResetForm(true)}
-                      sx={{ textTransform: 'none', fontWeight: 800, py: 1.2, mt: 1 }}
-                    >
-                      {resetToken ? 'Set New Password Now →' : 'Enter Token & Set New Password →'}
-                    </Button>
-                  </>
+                  <Alert severity="success">
+                    A password reset link has been dispatched to <strong>{forgotEmail}</strong>.
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      Please check your email inbox (and spam folder) and click <strong>&quot;Reset My Password&quot;</strong> in the email to set your new password.
+                    </Typography>
+                  </Alert>
                 ) : (
                   <>
                     <Typography variant="body2" color="text.secondary">
-                      Enter your registered email address to receive password reset instructions via Resend.
+                      Enter your registered farm email address. We will send a secure password reset link directly to your inbox.
                     </Typography>
                     <TextField
                       label="Registered Email"
@@ -756,18 +693,6 @@ export default function LoginPage() {
                       required
                       autoFocus
                     />
-                    <Link
-                      component="button"
-                      type="button"
-                      variant="caption"
-                      onClick={() => {
-                        setShowResetForm(true);
-                        setResetMsg(null);
-                      }}
-                      sx={{ textAlign: 'left', color: '#2e7d32', fontWeight: 600 }}
-                    >
-                      Already have a token? Set new password here &rarr;
-                    </Link>
                   </>
                 )}
               </>
@@ -802,7 +727,7 @@ export default function LoginPage() {
                 onClick={handleForgotSubmit}
                 sx={{ fontWeight: 700 }}
               >
-                {busy ? 'Sending OTP Code...' : 'Send 6-Digit OTP & Reset Link'}
+                {busy ? 'Sending Link...' : 'Send Reset Link'}
               </Button>
             )
           )}

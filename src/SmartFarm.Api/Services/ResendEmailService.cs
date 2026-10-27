@@ -44,7 +44,7 @@ public class ResendEmailService : IEmailService
 
         var fromEmail = _config["Resend:FromEmail"]
             ?? Environment.GetEnvironmentVariable("Resend__FromEmail")
-            ?? "SmartFarm <onboarding@resend.dev>";
+            ?? "SmartFarm <support@servicesdsj.com>";
 
         if (string.IsNullOrWhiteSpace(apiKey))
         {

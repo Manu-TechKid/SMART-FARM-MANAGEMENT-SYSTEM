@@ -38,13 +38,10 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
-        var (success, error, resetLink, token, otp) = await _auth.ForgotPasswordAsync(request.Email);
+        await _auth.ForgotPasswordAsync(request.Email);
         return Ok(new
         {
-            message = "If the email is registered, password reset instructions and OTP have been dispatched.",
-            resetLink,
-            token,
-            otp
+            message = "If an account exists with this email, a password reset link has been dispatched to your inbox."
         });
     }
 
@@ -54,17 +51,7 @@ public class AuthController : ControllerBase
     {
         var (success, error) = await _auth.ResetPasswordAsync(request);
         if (!success) return BadRequest(new { error });
-        return Ok(new { message = "Password reset successful." });
-    }
-
-    [HttpPost("reset-password-otp")]
-    [AllowAnonymous]
-    public async Task<IActionResult> ResetPasswordWithOtp([FromBody] ResetPasswordWithOtpRequest request)
-    {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-        var (success, error) = await _auth.ResetPasswordWithOtpAsync(request);
-        if (!success) return BadRequest(new { error });
-        return Ok(new { message = "Password reset successfully via OTP. You can now log in with your new password." });
+        return Ok(new { message = "Password reset successful. You can now log in with your new password." });
     }
 
     [HttpPost("change-password")]
