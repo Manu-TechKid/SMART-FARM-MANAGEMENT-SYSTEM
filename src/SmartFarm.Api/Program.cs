@@ -27,6 +27,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<SmartFarmDbContext>()
 .AddDefaultTokenProviders();
 
+builder.Services.AddMemoryCache();
+
 // ── JWT ───────────────────────────────────────────────────────────────────────
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
 builder.Services.AddSingleton(jwtSettings);

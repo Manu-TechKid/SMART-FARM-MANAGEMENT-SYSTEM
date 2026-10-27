@@ -35,6 +35,17 @@ public record ResetPasswordRequest(
     [Required, MinLength(8)] string NewPassword
 );
 
+public record ResetPasswordWithOtpRequest(
+    [Required, EmailAddress] string Email,
+    [Required, StringLength(6, MinimumLength = 6)] string Otp,
+    [Required, MinLength(8)] string NewPassword
+);
+
+public record ChangePasswordRequest(
+    [Required] string CurrentPassword,
+    [Required, MinLength(8)] string NewPassword
+);
+
 // -------- Farm --------
 public record CreateFarmRequest(
     [Required, MaxLength(200)] string Name,

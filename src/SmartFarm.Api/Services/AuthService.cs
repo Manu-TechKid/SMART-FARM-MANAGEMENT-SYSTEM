@@ -1,5 +1,7 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
 using SmartFarm.Api.Data;
 using SmartFarm.Api.DTOs;
 using SmartFarm.Api.Models;
@@ -11,8 +13,10 @@ public interface IAuthService
     Task<(bool Success, string? Error, AuthResponse? Response)> RegisterAsync(RegisterRequest request);
     Task<(bool Success, string? Error, AuthResponse? Response)> LoginAsync(LoginRequest request);
     Task<(bool Success, string? Error, AuthResponse? Response)> RefreshTokenAsync(string refreshToken);
-    Task<(bool Success, string? Error, string? ResetLink, string? Token)> ForgotPasswordAsync(string email);
+    Task<(bool Success, string? Error, string? ResetLink, string? Token, string? Otp)> ForgotPasswordAsync(string email);
     Task<(bool Success, string? Error)> ResetPasswordAsync(ResetPasswordRequest request);
+    Task<(bool Success, string? Error)> ResetPasswordWithOtpAsync(ResetPasswordWithOtpRequest request);
+    Task<(bool Success, string? Error)> ChangePasswordAsync(string userId, ChangePasswordRequest request);
 }
 
 public class AuthService : IAuthService
@@ -23,6 +27,7 @@ public class AuthService : IAuthService
     private readonly JwtSettings _jwtSettings;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _config;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
@@ -32,6 +37,7 @@ public class AuthService : IAuthService
         JwtSettings jwtSettings,
         IEmailService emailService,
         IConfiguration config,
+        IMemoryCache cache,
         ILogger<AuthService> logger)
     {
         _userManager = userManager;
@@ -40,6 +46,7 @@ public class AuthService : IAuthService
         _jwtSettings = jwtSettings;
         _emailService = emailService;
         _config = config;
+        _cache = cache;
         _logger = logger;
     }
 
@@ -47,14 +54,16 @@ public class AuthService : IAuthService
     {
         var existing = await _userManager.FindByEmailAsync(request.Email);
         if (existing != null)
-            return (false, "Email already registered.", null);
+            return (false, "An account with this email already exists.", null);
 
         var user = new ApplicationUser
         {
             UserName = request.Email,
             Email = request.Email,
             FirstName = request.FirstName,
-            LastName = request.LastName
+            LastName = request.LastName,
+            CreatedAt = DateTime.UtcNow,
+            IsActive = true
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
@@ -64,11 +73,18 @@ public class AuthService : IAuthService
         await _userManager.AddToRoleAsync(user, FarmRole.Viewer);
 
         var roles = await _userManager.GetRolesAsync(user);
-        var token = _jwtService.GenerateAccessToken(user, roles);
-        var refresh = _jwtService.GenerateRefreshToken();
+        var accessToken = _jwtService.GenerateAccessToken(user, roles);
+        var refreshToken = _jwtService.GenerateRefreshToken();
 
-        user.SecurityStamp = await _userManager.GetSecurityStampAsync(user); // store refresh via SecurityStamp extension in production
-        return (true, null, new AuthResponse(token, refresh, user.Id, user.Email!, user.FirstName, user.LastName, roles));
+        return (true, null, new AuthResponse(
+            accessToken,
+            refreshToken,
+            user.Id,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            roles
+        ));
     }
 
     public async Task<(bool Success, string? Error, AuthResponse? Response)> LoginAsync(LoginRequest request)
@@ -82,29 +98,43 @@ public class AuthService : IAuthService
             return (false, "Invalid credentials.", null);
 
         var roles = await _userManager.GetRolesAsync(user);
-        var token = _jwtService.GenerateAccessToken(user, roles);
-        var refresh = _jwtService.GenerateRefreshToken();
+        var accessToken = _jwtService.GenerateAccessToken(user, roles);
+        var refreshToken = _jwtService.GenerateRefreshToken();
 
-        return (true, null, new AuthResponse(token, refresh, user.Id, user.Email!, user.FirstName, user.LastName, roles));
+        return (true, null, new AuthResponse(
+            accessToken,
+            refreshToken,
+            user.Id,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            roles
+        ));
     }
 
     public Task<(bool Success, string? Error, AuthResponse? Response)> RefreshTokenAsync(string refreshToken)
     {
-        // In production: validate stored refresh token. Here we validate via JWT claims.
-        // A full implementation stores refresh tokens in DB with expiry.
         return Task.FromResult<(bool, string?, AuthResponse?)>((false, "Use login to get a new token.", null));
     }
 
-    public async Task<(bool Success, string? Error, string? ResetLink, string? Token)> ForgotPasswordAsync(string email)
+    public async Task<(bool Success, string? Error, string? ResetLink, string? Token, string? Otp)> ForgotPasswordAsync(string email)
     {
         var user = await _userManager.FindByEmailAsync(email);
         if (user == null)
         {
             _logger.LogInformation("Password reset requested for non-existent email: {Email}", email);
-            return (true, null, null, null); // don't reveal existence to avoid enumeration
+            return (true, null, null, null, null); // don't reveal existence to avoid enumeration
         }
 
+        // Generate 6-digit OTP
+        var otp = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
+        var emailKey = email.Trim().ToLowerInvariant();
+        _cache.Set($"reset_otp_{emailKey}", otp, TimeSpan.FromMinutes(15));
+
+        // Generate standard Identity password reset token & cache it alongside OTP
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        _cache.Set($"reset_token_{emailKey}", token, TimeSpan.FromMinutes(15));
+
         var baseUrl = _config["Resend:AppBaseUrl"]?.TrimEnd('/')
             ?? Environment.GetEnvironmentVariable("Resend__AppBaseUrl")
             ?? "https://bett-smartfarm.duckdns.org";
@@ -129,12 +159,12 @@ public class AuthService : IAuthService
     .body {{ padding: 36px 32px; }}
     .greeting {{ font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 14px; }}
     p {{ font-size: 15px; line-height: 1.6; color: #4b5563; margin: 0 0 18px; }}
-    .btn-container {{ text-align: center; margin: 32px 0; }}
+    .otp-box {{ background: #f0fdf4; border: 2px dashed #22c55e; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0; }}
+    .otp-label {{ font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: #15803d; }}
+    .otp-code {{ font-size: 38px; font-weight: 900; letter-spacing: 8px; color: #166534; font-family: ui-monospace, Menlo, Consolas, monospace; margin: 10px 0; }}
+    .otp-sub {{ font-size: 12px; color: #16a34a; font-weight: 600; }}
+    .btn-container {{ text-align: center; margin: 28px 0; }}
     .btn {{ display: inline-block; background-color: #2e7d32; color: #ffffff !important; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 34px; border-radius: 10px; box-shadow: 0 4px 14px rgba(46,125,50,0.35); }}
-    .token-card {{ background-color: #f8faf9; border: 1px solid #d1fae5; border-radius: 10px; padding: 16px 20px; margin: 24px 0; }}
-    .token-label {{ font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #047857; margin-bottom: 8px; }}
-    .token-code {{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; word-break: break-all; color: #065f46; font-weight: 600; }}
-    .divider {{ height: 1px; background-color: #f3f4f6; margin: 28px 0; }}
     .footer {{ background-color: #f9fafb; padding: 22px 32px; border-top: 1px solid #f3f4f6; text-align: center; font-size: 12px; color: #9ca3af; }}
   </style>
 </head>
@@ -147,15 +177,15 @@ public class AuthService : IAuthService
     <div class='body'>
       <div class='greeting'>Hello {recipientName},</div>
       <p>We received a request to reset your password for your Smart Farm account (<strong>{email}</strong>).</p>
-      <div class='btn-container'>
-        <a href='{resetLink}' class='btn' target='_blank'>Reset My Password</a>
+
+      <div class='otp-box'>
+        <div class='otp-label'>Your 6-Digit Password Reset OTP</div>
+        <div class='otp-code'>{otp}</div>
+        <div class='otp-sub'>Expires in 15 minutes &bull; Enter this on the password reset screen</div>
       </div>
-      <p style='font-size: 13px; color: #6b7280;'>If the button does not work directly, copy and paste this link into your browser:</p>
-      <p style='font-size: 12px; word-break: break-all; color: #2e7d32;'><a href='{resetLink}' style='color: #2e7d32;'>{resetLink}</a></p>
-      
-      <div class='token-card'>
-        <div class='token-label'>Manual Reset Token</div>
-        <div class='token-code'>{token}</div>
+
+      <div class='btn-container'>
+        <a href='{resetLink}' class='btn' target='_blank'>Or Click Here to Reset Instantly</a>
       </div>
       
       <p style='font-size: 13px; color: #9ca3af; margin-top: 24px;'>If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
@@ -167,13 +197,46 @@ public class AuthService : IAuthService
 </body>
 </html>";
 
-        var sent = await _emailService.SendEmailAsync(email, "Reset Your Smart Farm Password", html);
+        var sent = await _emailService.SendEmailAsync(email, $"Your SmartFarm Password Reset Code: {otp}", html);
         if (!sent)
         {
             _logger.LogWarning("Email delivery failed for password reset token for {Email}", email);
         }
 
-        return (true, null, resetLink, token);
+        return (true, null, resetLink, token, otp);
+    }
+
+    public async Task<(bool Success, string? Error)> ResetPasswordWithOtpAsync(ResetPasswordWithOtpRequest request)
+    {
+        var emailKey = request.Email.Trim().ToLowerInvariant();
+        if (!_cache.TryGetValue($"reset_otp_{emailKey}", out string? cachedOtp) || cachedOtp != request.Otp.Trim())
+        {
+            return (false, "Invalid or expired 6-digit OTP code. Please request a new code.");
+        }
+
+        var user = await _userManager.FindByEmailAsync(request.Email.Trim());
+        if (user == null)
+        {
+            return (false, "User account not found.");
+        }
+
+        // Get cached Identity token or generate fresh
+        if (!_cache.TryGetValue($"reset_token_{emailKey}", out string? token) || string.IsNullOrWhiteSpace(token))
+        {
+            token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        }
+
+        var result = await _userManager.ResetPasswordAsync(user, token, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            return (false, string.Join("; ", result.Errors.Select(e => e.Description)));
+        }
+
+        _cache.Remove($"reset_otp_{emailKey}");
+        _cache.Remove($"reset_token_{emailKey}");
+
+        _logger.LogInformation("Password reset successfully via OTP for user: {Email}", request.Email);
+        return (true, null);
     }
 
     public async Task<(bool Success, string? Error)> ResetPasswordAsync(ResetPasswordRequest request)
@@ -185,6 +248,21 @@ public class AuthService : IAuthService
         if (!result.Succeeded)
             return (false, string.Join("; ", result.Errors.Select(e => e.Description)));
 
+        return (true, null);
+    }
+
+    public async Task<(bool Success, string? Error)> ChangePasswordAsync(string userId, ChangePasswordRequest request)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return (false, "User not found.");
+
+        var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            return (false, string.Join("; ", result.Errors.Select(e => e.Description)));
+        }
+
+        _logger.LogInformation("User {UserId} ({Email}) changed password successfully", user.Id, user.Email);
         return (true, null);
     }
 }

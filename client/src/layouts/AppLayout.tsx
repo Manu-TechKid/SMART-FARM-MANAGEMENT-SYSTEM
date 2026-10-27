@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  AppBar, Avatar, Box, Button, Chip, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText,
-  MenuItem, Select, Stack, Toolbar, Tooltip, Typography, useMediaQuery, useTheme,
+  Alert, AppBar, Avatar, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle,
+  Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText,
+  MenuItem, Select, Stack, TextField, Toolbar, Tooltip, Typography, useMediaQuery, useTheme,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import LogoutIcon from '@mui/icons-material/Logout';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PetsIcon from '@mui/icons-material/Pets';
 import HiveIcon from '@mui/icons-material/EmojiNature';
@@ -23,6 +25,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AgricultureIcon from '@mui/icons-material/Agriculture';
 import { useAuth } from '../features/auth/AuthContext';
+import { api, errorMessage } from '../api/client';
 
 const WIDTH = 268;
 const COLLAPSED = 74;
@@ -51,6 +54,14 @@ export default function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, farms, farmId, setFarmId, logout } = useAuth();
   const navigate = useNavigate();
+
+  const [changePassOpen, setChangePassOpen] = useState(false);
+  const [curPass, setCurPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState('');
+  const [passBusy, setPassBusy] = useState(false);
+  const [passError, setPassError] = useState('');
+  const [passSuccess, setPassSuccess] = useState('');
 
   const width = isMobile ? WIDTH : collapsed ? COLLAPSED : WIDTH;
   const showLabels = isMobile || !collapsed;
@@ -186,6 +197,50 @@ export default function AppLayout() {
             </Box>
             <Button
               variant="outlined"
+              size="small"
+              startIcon={<VpnKeyIcon fontSize="small" />}
+              onClick={() => {
+                setCurPass('');
+                setNewPass('');
+                setConfirmPass('');
+                setPassError('');
+                setPassSuccess('');
+                setChangePassOpen(true);
+              }}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 700,
+                borderColor: '#c8d9cc',
+                color: '#1b5e20',
+                display: { xs: 'none', sm: 'inline-flex' },
+                '&:hover': { bgcolor: '#e8f5e9', borderColor: '#2e7d32' },
+              }}
+            >
+              Change Password
+            </Button>
+            <Tooltip title="Change Password">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setCurPass('');
+                  setNewPass('');
+                  setConfirmPass('');
+                  setPassError('');
+                  setPassSuccess('');
+                  setChangePassOpen(true);
+                }}
+                sx={{
+                  display: { xs: 'inline-flex', sm: 'none' },
+                  color: '#1b5e20',
+                  border: '1px solid #c8d9cc',
+                }}
+              >
+                <VpnKeyIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Button
+              variant="outlined"
               color="inherit"
               size="small"
               startIcon={<LogoutIcon fontSize="small" />}
@@ -218,6 +273,97 @@ export default function AppLayout() {
       <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3.5 }, mt: 8, minWidth: 0 }}>
         <Outlet />
       </Box>
+
+      {/* Change Password Dialog */}
+      <Dialog
+        open={changePassOpen}
+        onClose={() => !passBusy && setChangePassOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <Box
+          component="form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setPassError('');
+            setPassSuccess('');
+            if (!curPass) {
+              setPassError('Please enter your current password.');
+              return;
+            }
+            if (newPass.length < 8) {
+              setPassError('New password must be at least 8 characters long.');
+              return;
+            }
+            if (newPass !== confirmPass) {
+              setPassError('New password and confirm password do not match.');
+              return;
+            }
+            setPassBusy(true);
+            try {
+              await api.post('/auth/change-password', {
+                currentPassword: curPass,
+                newPassword: newPass,
+              });
+              setPassSuccess('Password updated successfully!');
+              setTimeout(() => {
+                setChangePassOpen(false);
+                setCurPass('');
+                setNewPass('');
+                setConfirmPass('');
+              }, 1200);
+            } catch (err) {
+              setPassError(errorMessage(err));
+            } finally {
+              setPassBusy(false);
+            }
+          }}
+        >
+          <DialogTitle fontWeight={800}>Change Your Password</DialogTitle>
+          <DialogContent sx={{ display: 'grid', gap: 2, pt: 1 }}>
+            {passError && <Alert severity="error">{passError}</Alert>}
+            {passSuccess && <Alert severity="success">{passSuccess}</Alert>}
+            <Typography variant="body2" color="text.secondary">
+              Update password for <strong>{user?.email}</strong>.
+            </Typography>
+            <TextField
+              label="Current Password"
+              type="password"
+              size="small"
+              required
+              fullWidth
+              value={curPass}
+              onChange={(e) => setCurPass(e.target.value)}
+              autoFocus
+            />
+            <TextField
+              label="New Password"
+              type="password"
+              size="small"
+              required
+              fullWidth
+              value={newPass}
+              onChange={(e) => setNewPass(e.target.value)}
+              helperText="Must be at least 8 characters"
+            />
+            <TextField
+              label="Confirm New Password"
+              type="password"
+              size="small"
+              required
+              fullWidth
+              value={confirmPass}
+              onChange={(e) => setConfirmPass(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2.5 }}>
+            <Button onClick={() => setChangePassOpen(false)} disabled={passBusy}>Cancel</Button>
+            <Button type="submit" variant="contained" color="success" disabled={passBusy}>
+              {passBusy ? 'Updating...' : 'Save New Password'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
     </Box>
   );
 }

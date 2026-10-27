@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { api, errorMessage } from '../../api/client';
 import { useAuth } from '../auth/AuthContext';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 
 const ROLES = [
   'FarmManager',
@@ -48,6 +49,15 @@ export default function UsersPage() {
   const [err, setErr] = useState('');
   const [form, setForm] = useState({ email: '', role: 'LivestockOfficer' });
 
+  // Change Password state
+  const [changePassOpen, setChangePassOpen] = useState(false);
+  const [curPass, setCurPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState('');
+  const [passBusy, setPassBusy] = useState(false);
+  const [passError, setPassError] = useState('');
+  const [passSuccess, setPassSuccess] = useState('');
+
   const { data: users } = useQuery({
     queryKey: ['farm-users', farmId],
     enabled: !!farmId,
@@ -87,7 +97,23 @@ export default function UsersPage() {
     <Stack spacing={2}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
         <Typography variant="h5" fontWeight={700}>Users, Roles & Audit Trail</Typography>
-        <Button variant="contained" onClick={() => { setErr(''); setOpen(true); }}>Add Staff Member</Button>
+        <Stack direction="row" spacing={1.2}>
+          <Button
+            variant="outlined"
+            startIcon={<VpnKeyIcon />}
+            onClick={() => {
+              setCurPass('');
+              setNewPass('');
+              setConfirmPass('');
+              setPassError('');
+              setPassSuccess('');
+              setChangePassOpen(true);
+            }}
+          >
+            Change My Password
+          </Button>
+          <Button variant="contained" onClick={() => { setErr(''); setOpen(true); }}>Add Staff Member</Button>
+        </Stack>
       </Stack>
 
       {err && <Alert severity="error" onClose={() => setErr('')}>{err}</Alert>}
@@ -175,6 +201,94 @@ export default function UsersPage() {
             </TextField>
           </DialogContent>
           <DialogActions><Button onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" variant="contained">Grant Access</Button></DialogActions>
+        </Box>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog
+        open={changePassOpen}
+        onClose={() => !passBusy && setChangePassOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <Box
+          component="form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setPassError('');
+            setPassSuccess('');
+            if (!curPass) {
+              setPassError('Please enter your current password.');
+              return;
+            }
+            if (newPass.length < 8) {
+              setPassError('New password must be at least 8 characters long.');
+              return;
+            }
+            if (newPass !== confirmPass) {
+              setPassError('New password and confirm password do not match.');
+              return;
+            }
+            setPassBusy(true);
+            try {
+              await api.post('/auth/change-password', {
+                currentPassword: curPass,
+                newPassword: newPass,
+              });
+              setPassSuccess('Password updated successfully!');
+              setTimeout(() => {
+                setChangePassOpen(false);
+                setCurPass('');
+                setNewPass('');
+                setConfirmPass('');
+              }, 1200);
+            } catch (err) {
+              setPassError(errorMessage(err));
+            } finally {
+              setPassBusy(false);
+            }
+          }}
+        >
+          <DialogTitle fontWeight={800}>Change Your Password</DialogTitle>
+          <DialogContent sx={{ display: 'grid', gap: 2, pt: 1 }}>
+            {passError && <Alert severity="error">{passError}</Alert>}
+            {passSuccess && <Alert severity="success">{passSuccess}</Alert>}
+            <TextField
+              label="Current Password"
+              type="password"
+              size="small"
+              required
+              fullWidth
+              value={curPass}
+              onChange={(e) => setCurPass(e.target.value)}
+              autoFocus
+            />
+            <TextField
+              label="New Password"
+              type="password"
+              size="small"
+              required
+              fullWidth
+              value={newPass}
+              onChange={(e) => setNewPass(e.target.value)}
+              helperText="Must be at least 8 characters"
+            />
+            <TextField
+              label="Confirm New Password"
+              type="password"
+              size="small"
+              required
+              fullWidth
+              value={confirmPass}
+              onChange={(e) => setConfirmPass(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2.5 }}>
+            <Button onClick={() => setChangePassOpen(false)} disabled={passBusy}>Cancel</Button>
+            <Button type="submit" variant="contained" color="success" disabled={passBusy}>
+              {passBusy ? 'Updating...' : 'Save New Password'}
+            </Button>
+          </DialogActions>
         </Box>
       </Dialog>
     </Stack>

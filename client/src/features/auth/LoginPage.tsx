@@ -113,6 +113,7 @@ export default function LoginPage() {
   const [forgotSent, setForgotSent] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
   const [resetToken, setResetToken] = useState('');
+  const [resetOtp, setResetOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetting, setResetting] = useState(false);
@@ -197,11 +198,15 @@ export default function LoginPage() {
     setResetMsg(null);
     setBusy(true);
     try {
-      const res = await api.post<{ message: string; resetLink?: string; token?: string }>('/auth/forgot-password', { email: forgotEmail.trim() });
+      const res = await api.post<{ message: string; resetLink?: string; token?: string; otp?: string }>('/auth/forgot-password', { email: forgotEmail.trim() });
       if (res.data?.token) {
         setResetToken(res.data.token);
       }
+      if (res.data?.otp) {
+        setResetOtp(res.data.otp);
+      }
       setForgotSent(true);
+      setShowResetForm(true);
     } catch (err) {
       setResetMsg({ severity: 'error', text: errorMessage(err) });
     } finally {
@@ -211,8 +216,11 @@ export default function LoginPage() {
 
   const handleResetSubmit = async () => {
     setResetMsg(null);
-    if (!forgotEmail.trim() || !resetToken.trim() || !newPassword) {
-      setResetMsg({ severity: 'error', text: 'Please provide email, reset token, and your new password.' });
+    const hasOtp = resetOtp.trim().length === 6;
+    const hasToken = resetToken.trim().length > 0;
+
+    if (!forgotEmail.trim() || (!hasOtp && !hasToken) || !newPassword) {
+      setResetMsg({ severity: 'error', text: 'Please provide your email, 6-digit OTP code (or token), and new password.' });
       return;
     }
     if (newPassword.length < 8) {
@@ -226,11 +234,19 @@ export default function LoginPage() {
 
     setResetting(true);
     try {
-      await api.post('/auth/reset-password', {
-        email: forgotEmail.trim(),
-        token: resetToken.trim(),
-        newPassword,
-      });
+      if (hasOtp) {
+        await api.post('/auth/reset-password-otp', {
+          email: forgotEmail.trim(),
+          otp: resetOtp.trim(),
+          newPassword,
+        });
+      } else {
+        await api.post('/auth/reset-password', {
+          email: forgotEmail.trim(),
+          token: resetToken.trim(),
+          newPassword,
+        });
+      }
       setResetMsg({
         severity: 'success',
         text: 'Password updated successfully! Logging you in...',
@@ -242,9 +258,10 @@ export default function LoginPage() {
         setForgotOpen(false);
         setShowResetForm(false);
         setResetToken('');
+        setResetOtp('');
         setNewPassword('');
         setConfirmPassword('');
-      }, 2000);
+      }, 1500);
     } catch (err) {
       setResetMsg({ severity: 'error', text: errorMessage(err) });
     } finally {
@@ -642,7 +659,7 @@ export default function LoginPage() {
             {showResetForm ? (
               <>
                 <Typography variant="body2" color="text.secondary">
-                  Enter your email, the reset token received in your email, and choose your new password.
+                  Enter your email, the 6-digit verification code (OTP), and choose your new password.
                 </Typography>
                 <TextField
                   label="Registered Email"
@@ -654,13 +671,18 @@ export default function LoginPage() {
                   required
                 />
                 <TextField
-                  label="Reset Token"
+                  label="6-Digit Reset Code (OTP)"
                   size="small"
-                  value={resetToken}
-                  onChange={(e) => setResetToken(e.target.value)}
-                  placeholder="Paste token from email"
+                  value={resetOtp}
+                  onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="e.g. 123456"
                   fullWidth
                   required
+                  inputProps={{
+                    maxLength: 6,
+                    style: { letterSpacing: 4, fontWeight: 800, fontSize: '1.15rem', textAlign: 'center' },
+                  }}
+                  helperText="Enter the 6-digit code sent to your email (or pre-filled code)"
                 />
                 <TextField
                   label="New Password"
@@ -691,7 +713,7 @@ export default function LoginPage() {
                   }}
                   sx={{ textAlign: 'left', color: '#2e7d32', fontWeight: 600 }}
                 >
-                  &larr; Request a new email link instead
+                  &larr; Request a new code instead
                 </Link>
               </>
             ) : (
@@ -780,7 +802,7 @@ export default function LoginPage() {
                 onClick={handleForgotSubmit}
                 sx={{ fontWeight: 700 }}
               >
-                {busy ? 'Sending...' : 'Send Reset Instructions'}
+                {busy ? 'Sending OTP Code...' : 'Send 6-Digit OTP & Reset Link'}
               </Button>
             )
           )}
