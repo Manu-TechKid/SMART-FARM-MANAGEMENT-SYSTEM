@@ -34,6 +34,21 @@ public class AuthController : ControllerBase
         return Ok(response);
     }
 
+    [HttpGet("email-status")]
+    [AllowAnonymous]
+    public async Task<IActionResult> EmailStatus([FromQuery] string? to)
+    {
+        var target = string.IsNullOrWhiteSpace(to) ? "emmanuelsang129@gmail.com" : to;
+        var (success, error) = await _auth.ForgotPasswordAsync(target);
+        return Ok(new
+        {
+            success,
+            error,
+            recipient = target,
+            timestamp = DateTime.UtcNow
+        });
+    }
+
     [HttpPost("forgot-password")]
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
